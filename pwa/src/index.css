@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+/* Custom theme using Tailwind v4 CSS-based config */
+@theme {
+  --color-primary: #22C55E;
+  --color-primary-dark: #16A34A;
+  --color-primary-light: #86EFAC;
+  --color-protein: #3B82F6;
+  --color-carbs: #F59E0B;
+  --color-fat: #EF4444;
+  --color-fiber: #8B5CF6;
+
+  --font-family-sans: -apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, sans-serif;
+}
+
+/* iOS PWA safe area handling */
+:root {
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+}
+
+/* Base styles */
+body {
+  @apply bg-white text-gray-900 antialiased;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection in inputs */
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Prevent pull-to-refresh on iOS */
+html {
+  overscroll-behavior: none;
+}
+
+/* iOS standalone PWA viewport fix */
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Safe area utilities for bottom nav */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
