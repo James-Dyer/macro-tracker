@@ -1,16 +1,30 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 
 /* Custom theme using Tailwind v4 CSS-based config */
 @theme {
-  --color-primary: #22C55E;
-  --color-primary-dark: #16A34A;
-  --color-primary-light: #86EFAC;
-  --color-protein: #3B82F6;
-  --color-carbs: #F59E0B;
-  --color-fat: #EF4444;
-  --color-fiber: #8B5CF6;
+  --color-primary: #16a34a;
+  --color-primary-dark: #15803d;
+  --color-primary-light: #22c55e;
+  --color-protein: #2563eb;
+  --color-carbs: #f59e0b;
+  --color-fat: #dc2626;
+  --color-fiber: #7c3aed;
 
-  --font-family-sans: -apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, sans-serif;
+  /* Neutral palette - warmer tones */
+  --color-gray-50: #fafaf9;
+  --color-gray-100: #f5f5f4;
+  --color-gray-200: #e7e5e4;
+  --color-gray-300: #d6d3d1;
+  --color-gray-400: #a8a29e;
+  --color-gray-500: #78716c;
+  --color-gray-600: #57534e;
+  --color-gray-700: #44403c;
+  --color-gray-800: #292524;
+  --color-gray-900: #1c1917;
+
+  --font-family-sans: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
 }
 
 /* iOS PWA safe area handling */
@@ -23,11 +37,12 @@
 
 /* Base styles */
 body {
-  @apply bg-white text-gray-900 antialiased;
+  @apply bg-gray-50 text-gray-900 antialiased;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+  font-feature-settings: "kern" 1, "liga" 1;
 }
 
 /* Allow text selection in inputs */
@@ -51,4 +66,65 @@ html {
 /* Safe area utilities for bottom nav */
 .safe-area-pb {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Custom animations */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Stagger delays for lists */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+
+/* Number formatting for data */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Smooth transitions */
+* {
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }

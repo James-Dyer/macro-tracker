@@ -2,13 +2,9 @@ import { Typography } from './Typography';
 import { Card } from './Card';
 
 /**
- * MealCard component for displaying a logged meal.
+ * MealCard - Redesigned with better visual hierarchy
  *
- * Shows:
- * - Meal photo thumbnail (if available)
- * - Time and total calories
- * - Food items list (shows 3, truncates with "+X more")
- * - Macro pills showing P/C/F values with color coding
+ * Layout: Photo + stacked content with macro badges
  */
 
 interface FoodItem {
@@ -27,10 +23,10 @@ interface MealCardProps {
   onClick?: () => void;
 }
 
-const macroColors = {
-  protein: 'bg-protein/10 text-protein',
-  carbs: 'bg-carbs/10 text-carbs',
-  fat: 'bg-fat/10 text-fat',
+const macroConfig = {
+  protein: { color: '#2563eb', bg: '#eff6ff', label: 'P' },
+  carbs: { color: '#f59e0b', bg: '#fffbeb', label: 'C' },
+  fat: { color: '#dc2626', bg: '#fef2f2', label: 'F' },
 };
 
 export function MealCard({ timestamp, photoUrl, foodItems, onClick }: MealCardProps) {
@@ -48,61 +44,76 @@ export function MealCard({ timestamp, photoUrl, foodItems, onClick }: MealCardPr
     <Card
       variant="elevated"
       padding="none"
-      className={onClick ? 'cursor-pointer active:bg-gray-50' : ''}
+      className={`
+        overflow-hidden transition-all duration-200
+        ${onClick ? 'cursor-pointer active:scale-[0.98]' : ''}
+        hover:shadow-lg
+      `}
       onClick={onClick}
     >
-      <div className="flex">
+      <div className="flex gap-3 p-3">
         {/* Photo thumbnail */}
         {photoUrl ? (
-          <img
-            src={photoUrl}
-            alt="Meal"
-            className="w-20 h-20 object-cover rounded-l-xl"
-          />
+          <div className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-gray-100">
+            <img
+              src={photoUrl}
+              alt="Meal"
+              className="w-full h-full object-cover"
+            />
+          </div>
         ) : (
-          <div className="w-20 h-20 bg-gray-100 rounded-l-xl flex items-center justify-center">
-            <Typography variant="caption" color="tertiary">
-              No photo
-            </Typography>
+          <div className="flex-shrink-0 w-20 h-20 rounded-lg bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center border border-gray-200">
+            <svg
+              className="w-8 h-8 text-gray-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
           </div>
         )}
 
         {/* Content */}
-        <div className="flex-1 p-2">
+        <div className="flex-1 min-w-0">
           {/* Header */}
-          <div className="flex justify-between items-center mb-1">
-            <Typography variant="label" color="primary">
-              {timeString}
-            </Typography>
-            <Typography variant="body" color="primary">
-              {totalCalories} cal
-            </Typography>
+          <div className="flex items-start justify-between mb-2">
+            <div>
+              <div className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+                {timeString}
+              </div>
+            </div>
+            <div className="font-mono text-lg font-bold tabular-nums text-gray-900">
+              {totalCalories}
+              <span className="text-xs text-gray-400 font-normal ml-0.5">cal</span>
+            </div>
           </div>
 
           {/* Food items */}
-          <div className="mb-2">
-            {foodItems.slice(0, 3).map((item, index) => (
-              <Typography
-                key={index}
-                variant="bodySmall"
-                color="secondary"
-                className="truncate"
-              >
-                {item.name} ({item.weight_g}g)
-              </Typography>
+          <div className="mb-2 space-y-0.5">
+            {foodItems.slice(0, 2).map((item, index) => (
+              <div key={index} className="text-sm text-gray-600 truncate">
+                {item.name}
+                <span className="text-gray-400 text-xs ml-1">({item.weight_g}g)</span>
+              </div>
             ))}
-            {foodItems.length > 3 && (
-              <Typography variant="caption" color="tertiary">
-                +{foodItems.length - 3} more items
-              </Typography>
+            {foodItems.length > 2 && (
+              <div className="text-xs text-gray-400 font-medium">
+                +{foodItems.length - 2} more
+              </div>
             )}
           </div>
 
-          {/* Macro pills */}
-          <div className="flex gap-1">
-            <MacroPill label="P" value={totalProtein} color="protein" />
-            <MacroPill label="C" value={totalCarbs} color="carbs" />
-            <MacroPill label="F" value={totalFat} color="fat" />
+          {/* Macro badges */}
+          <div className="flex gap-1.5">
+            <MacroBadge value={totalProtein} type="protein" />
+            <MacroBadge value={totalCarbs} type="carbs" />
+            <MacroBadge value={totalFat} type="fat" />
           </div>
         </div>
       </div>
@@ -110,18 +121,23 @@ export function MealCard({ timestamp, photoUrl, foodItems, onClick }: MealCardPr
   );
 }
 
-interface MacroPillProps {
-  label: string;
+interface MacroBadgeProps {
   value: number;
-  color: keyof typeof macroColors;
+  type: 'protein' | 'carbs' | 'fat';
 }
 
-function MacroPill({ label, value, color }: MacroPillProps) {
+function MacroBadge({ value, type }: MacroBadgeProps) {
+  const config = macroConfig[type];
+
   return (
-    <div className={`px-2 py-0.5 rounded ${macroColors[color]}`}>
-      <Typography variant="caption">
-        {label}: {Math.round(value)}g
-      </Typography>
+    <div
+      className="px-2 py-0.5 rounded text-xs font-mono font-semibold tabular-nums"
+      style={{
+        color: config.color,
+        backgroundColor: config.bg,
+      }}
+    >
+      {config.label} {Math.round(value)}
     </div>
   );
 }

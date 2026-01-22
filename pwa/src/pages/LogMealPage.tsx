@@ -2,15 +2,9 @@ import { useState, useRef } from 'react';
 import { Typography, Button, Card } from '../components/ui';
 
 /**
- * LogMealPage - Photo capture and meal logging
+ * LogMealPage - Photo capture with refined UI
  *
- * Flow:
- * 1. User taps "Take Photo" button
- * 2. iOS native camera opens (via file input)
- * 3. User takes photo → "Retake / Use Photo"
- * 4. On "Use Photo", show preview
- * 5. User taps "Analyze" → AI processes image
- * 6. Navigate to confirmation screen (to be built)
+ * Emphasizes the camera action with clean visual hierarchy
  */
 
 export function LogMealPage() {
@@ -22,13 +16,8 @@ export function LogMealPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Create preview URL
     const imageUrl = URL.createObjectURL(file);
     setSelectedImage(imageUrl);
-
-    // TODO: Compress image before upload
-    // TODO: Upload to Supabase Storage
-    // TODO: Call AI Edge Function
   };
 
   const handleTakePhoto = () => {
@@ -47,13 +36,6 @@ export function LogMealPage() {
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
-
-    // TODO: Implement AI analysis
-    // 1. Compress image
-    // 2. Upload to Supabase Storage
-    // 3. Call AI Edge Function with image URL
-    // 4. Navigate to confirmation screen with results
-
     setTimeout(() => {
       setIsAnalyzing(false);
       console.log('Analysis complete');
@@ -61,65 +43,104 @@ export function LogMealPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
-      <div className="p-4 bg-white border-b border-gray-200">
-        <Typography variant="h2">Log Meal</Typography>
-        <Typography variant="bodySmall" color="secondary">
-          Take a photo of your meal to get started
+      <div className="px-5 pt-4 pb-3 bg-white/80 backdrop-blur-sm border-b border-gray-200/60 sticky top-0 z-10">
+        <Typography variant="h2" className="text-gray-900">
+          Log Meal
+        </Typography>
+        <Typography variant="bodySmall" color="secondary" className="mt-0.5">
+          Capture your meal for instant analysis
         </Typography>
       </div>
 
-      <div className="p-4">
+      <div className="px-5 py-5">
         {!selectedImage ? (
           /* Camera Prompt */
-          <Card padding="lg" className="text-center">
-            <div className="mb-6">
-              <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                <CameraIcon />
+          <div className="animate-scale-in">
+            <Card padding="none" variant="elevated" className="overflow-hidden">
+              {/* Large camera area */}
+              <div className="aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center border-b border-gray-200">
+                <div className="text-center">
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white shadow-md flex items-center justify-center">
+                    <CameraIcon className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <Typography variant="body" color="secondary" className="font-medium">
+                    Ready to scan
+                  </Typography>
+                </div>
               </div>
-              <Typography variant="h3" className="mb-2">
-                Take a Photo
-              </Typography>
-              <Typography variant="body" color="secondary">
-                For best results, place your meal on a scale and ensure the
-                display is visible in the photo
-              </Typography>
-            </div>
 
-            {/* Hidden file input for iOS camera */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
 
-            <Button
-              title="Open Camera"
-              onClick={handleTakePhoto}
-              size="lg"
-              fullWidth
-            />
+              {/* Action area */}
+              <div className="p-5">
+                <Button
+                  title="Open Camera"
+                  onClick={handleTakePhoto}
+                  size="lg"
+                  fullWidth
+                  className="mb-4"
+                />
 
-            <div className="mt-4">
-              <Typography variant="caption" color="tertiary">
-                Works best with good lighting
-              </Typography>
-            </div>
-          </Card>
+                <Card variant="filled" padding="md">
+                  <Typography variant="label" className="mb-2 text-gray-700">
+                    Tips for best results:
+                  </Typography>
+                  <ul className="space-y-1.5">
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">•</span>
+                      <Typography variant="bodySmall" color="secondary">
+                        Place food on scale with display visible
+                      </Typography>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">•</span>
+                      <Typography variant="bodySmall" color="secondary">
+                        Use good lighting for accuracy
+                      </Typography>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">•</span>
+                      <Typography variant="bodySmall" color="secondary">
+                        Include all items in frame
+                      </Typography>
+                    </li>
+                  </ul>
+                </Card>
+              </div>
+            </Card>
+          </div>
         ) : (
           /* Photo Preview */
-          <div className="space-y-4">
-            <Card padding="none">
+          <div className="space-y-4 animate-scale-in">
+            <Card padding="none" variant="elevated" className="overflow-hidden">
               <img
                 src={selectedImage}
                 alt="Meal preview"
-                className="w-full h-auto rounded-xl"
+                className="w-full h-auto"
               />
             </Card>
+
+            {/* Analysis indicator */}
+            {isAnalyzing && (
+              <Card variant="filled" padding="md" className="animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-ping" />
+                  <Typography variant="body" color="secondary" className="font-medium">
+                    Analyzing your meal...
+                  </Typography>
+                </div>
+              </Card>
+            )}
 
             <div className="space-y-2">
               <Button
@@ -138,29 +159,6 @@ export function LogMealPage() {
                 fullWidth
               />
             </div>
-
-            <Card padding="md" variant="filled">
-              <Typography variant="label" className="mb-2">
-                Tips for best results:
-              </Typography>
-              <ul className="space-y-1">
-                <li>
-                  <Typography variant="bodySmall" color="secondary">
-                    • Ensure the scale display is clearly visible
-                  </Typography>
-                </li>
-                <li>
-                  <Typography variant="bodySmall" color="secondary">
-                    • Good lighting helps AI accuracy
-                  </Typography>
-                </li>
-                <li>
-                  <Typography variant="bodySmall" color="secondary">
-                    • Include all food items in frame
-                  </Typography>
-                </li>
-              </ul>
-            </Card>
           </div>
         )}
       </div>
@@ -168,10 +166,10 @@ export function LogMealPage() {
   );
 }
 
-function CameraIcon() {
+function CameraIcon({ className }: { className?: string }) {
   return (
     <svg
-      className="w-12 h-12 text-gray-400"
+      className={className}
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -179,13 +177,13 @@ function CameraIcon() {
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth={2}
+        strokeWidth={1.5}
         d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
       />
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth={2}
+        strokeWidth={1.5}
         d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
       />
     </svg>
