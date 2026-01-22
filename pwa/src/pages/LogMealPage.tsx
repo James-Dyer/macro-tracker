@@ -11,6 +11,7 @@ export function LogMealPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const analyzeRunId = useRef(0);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -18,6 +19,9 @@ export function LogMealPage() {
 
     const imageUrl = URL.createObjectURL(file);
     setSelectedImage(imageUrl);
+
+    // Auto-start analysis as soon as the user taps "Use Photo" in the native picker
+    void analyzePhoto(imageUrl);
   };
 
   const handleTakePhoto = () => {
@@ -25,6 +29,8 @@ export function LogMealPage() {
   };
 
   const handleRetake = () => {
+    analyzeRunId.current += 1; // cancel any in-flight analysis
+    setIsAnalyzing(false);
     if (selectedImage) {
       URL.revokeObjectURL(selectedImage);
     }
@@ -34,9 +40,11 @@ export function LogMealPage() {
     }
   };
 
-  const handleAnalyze = async () => {
+  const analyzePhoto = async (_imageUrl: string) => {
+    const runId = ++analyzeRunId.current;
     setIsAnalyzing(true);
     setTimeout(() => {
+      if (analyzeRunId.current !== runId) return;
       setIsAnalyzing(false);
       console.log('Analysis complete');
     }, 2000);
@@ -143,13 +151,6 @@ export function LogMealPage() {
             )}
 
             <div className="space-y-2">
-              <Button
-                title={isAnalyzing ? 'Analyzing...' : 'Analyze Meal'}
-                onClick={handleAnalyze}
-                loading={isAnalyzing}
-                size="lg"
-                fullWidth
-              />
               <Button
                 title="Retake Photo"
                 variant="secondary"
