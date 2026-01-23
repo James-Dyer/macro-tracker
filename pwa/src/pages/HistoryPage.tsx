@@ -113,7 +113,12 @@ export function HistoryPage() {
                   {/* Meals */}
                   <div className="space-y-3">
                     {mealsForDate.map((meal) => (
-                      <MealCard key={meal.id} meal={meal} />
+                      <MealCard
+                        key={meal.id}
+                        timestamp={new Date(meal.timestamp)}
+                        photoUrl={meal.photo_url}
+                        foodItems={meal.food_items}
+                      />
                     ))}
                   </div>
                 </div>

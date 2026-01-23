@@ -1,6 +1,5 @@
 import { Typography } from './Typography';
 import { Card } from './Card';
-import { CircularProgress } from './CircularProgress';
 
 /**
  * MacroSummary component - Redesigned with circular progress rings

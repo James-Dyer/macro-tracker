@@ -2,7 +2,7 @@
  * Image utility functions for processing meal photos
  */
 
-import { supabase } from "../lib/supabase";
+import { supabase } from "../services/supabase";
 
 /**
  * Convert a File or Blob to base64 string

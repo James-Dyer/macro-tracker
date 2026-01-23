@@ -1,4 +1,3 @@
-import { Typography } from './Typography';
 import { Card } from './Card';
 
 /**

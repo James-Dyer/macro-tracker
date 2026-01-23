@@ -9,7 +9,7 @@ import { useGoals } from '../hooks/useGoals';
  */
 
 export function HomePage() {
-  const { meals, loading: mealsLoading, error: mealsError, getTodayMeals, calculateDailyTotals } = useMeals();
+  const { loading: mealsLoading, error: mealsError, getTodayMeals, calculateDailyTotals } = useMeals();
   const { goals, loading: goalsLoading } = useGoals();
 
   // Get today's meals
@@ -84,9 +84,7 @@ export function HomePage() {
             Meals
           </Typography>
           <Typography variant="caption" color="tertiary" className="font-mono tabular-nums">
-            {todayMeals.reduce((sum, meal) =>
-              sum + meal.foodItems.reduce((mealSum, item) => mealSum + item.calories, 0), 0
-            )} cal
+            {totals.calories} cal
           </Typography>
         </div>
 
@@ -121,7 +119,11 @@ export function HomePage() {
                 key={meal.id}
                 className={`animate-slide-up stagger-${Math.min(index + 2, 4)}`}
               >
-                <MealCard meal={meal} />
+                <MealCard
+                  timestamp={new Date(meal.timestamp)}
+                  photoUrl={meal.photo_url}
+                  foodItems={meal.food_items}
+                />
               </div>
             ))}
           </div>

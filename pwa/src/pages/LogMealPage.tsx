@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Typography, Button, Card } from '../components/ui';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../services/supabase';
 import { compressImage, validateImage, uploadMealPhoto } from '../utils/imageUtils';
 
 /**
@@ -13,7 +13,6 @@ import { compressImage, validateImage, uploadMealPhoto } from '../utils/imageUti
 export function LogMealPage() {
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -32,7 +31,6 @@ export function LogMealPage() {
 
     const imageUrl = URL.createObjectURL(file);
     setSelectedImage(imageUrl);
-    setSelectedFile(file);
     setError(null);
 
     // Auto-start analysis as soon as the user taps "Use Photo" in the native picker
@@ -51,7 +49,6 @@ export function LogMealPage() {
       URL.revokeObjectURL(selectedImage);
     }
     setSelectedImage(null);
-    setSelectedFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Typography, Button, Card } from "../components/ui";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../services/supabase";
 
 /**
  * DetectedFood interface matches the AI response from analyze-meal Edge Function
@@ -118,7 +118,7 @@ export function ConfirmMealPage() {
         .getPublicUrl(analysisResult.photoPath);
 
       // Call save-meal Edge Function
-      const { data, error: saveError } = await supabase.functions.invoke(
+      const { error: saveError } = await supabase.functions.invoke(
         "save-meal",
         {
           body: {
