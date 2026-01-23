@@ -157,7 +157,8 @@ An AI-powered mobile app that recognizes food from photos and integrates with fo
 |----------|-------------------------|---------------|
 | Food ID accuracy | Strong | Strong |
 | OCR (scale reading) | Native support | Native support |
-| Single API call | Yes - multimodal | Yes - multimodal |
+| Nutrition estimation | Strong (trained on USDA data) | Strong (trained on USDA data) |
+| Single API call | Yes - complete meal analysis | Yes - complete meal analysis |
 | Free tier | Generous (60 req/min) | Limited |
 | Pricing | $0.0025/image | $0.01-0.03/image |
 | Latency | ~1-2 seconds | ~2-4 seconds |
@@ -165,10 +166,7 @@ An AI-powered mobile app that recognizes food from photos and integrates with fo
 
 **Strategy:** Build an abstraction layer to support both providers. Start with Gemini (cost-effective), validate accuracy, A/B test with GPT-4V if needed, implement fallback logic for reliability.
 
-### Supplementary APIs
-
-- **FatSecret API:** Verified nutrition database for 56 countries, barcode scanning, nutrition data lookup
-- **Calorie Mama:** Food-specific recognition for validation against general-purpose models
+**Nutrition Data Approach:** AI models return complete nutrition data (calories, protein, carbs, fat, fiber) based on food identification and weight estimation. This eliminates the need for external nutrition databases and keeps the system simple with a single API call per meal.
 
 ### Payments: RevenueCat + Stripe
 
@@ -405,9 +403,9 @@ fiber: float (grams)
 |------|--------|------------|
 | Scale UX adoption | Users may skip scale step | Non-blocking; track usage analytics |
 | AI misclassification trust erosion | Users lose confidence after errors | Always allow corrections; show confidence scores |
-| Nutrition DB mismatches | AI + DB disagree on values | Use DB as source of truth when matched |
+| AI nutrition estimation variance | Estimated macros may vary from USDA values | Allow user corrections; show confidence scores; consider future DB integration |
 | Lighting/plating variance | Poor photos reduce accuracy | Provide photo tips; graceful degradation |
-| International food coverage | Non-US foods poorly recognized | Start US-focused; expand DB over time |
+| International food coverage | Non-US foods poorly recognized | AI models trained on diverse datasets; improve over time |
 | Weight reading failures | Scale obscured or unreadable | Manual weight entry fallback |
 | Cold start latency | Edge functions slow on first call | Keep functions warm; show progress indicator |
 

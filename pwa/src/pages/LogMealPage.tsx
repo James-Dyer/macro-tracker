@@ -1,5 +1,8 @@
 import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Typography, Button, Card } from '../components/ui';
+import { supabase } from '../lib/supabase';
+import { compressImage, validateImage, uploadMealPhoto } from '../utils/imageUtils';
 
 /**
  * LogMealPage - Photo capture with refined UI
@@ -8,8 +11,11 @@ import { Typography, Button, Card } from '../components/ui';
  */
 
 export function LogMealPage() {
+  const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const analyzeRunId = useRef(0);
 
@@ -17,11 +23,20 @@ export function LogMealPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Validate image
+    const validation = validateImage(file);
+    if (!validation.valid) {
+      setError(validation.error || 'Invalid image');
+      return;
+    }
+
     const imageUrl = URL.createObjectURL(file);
     setSelectedImage(imageUrl);
+    setSelectedFile(file);
+    setError(null);
 
     // Auto-start analysis as soon as the user taps "Use Photo" in the native picker
-    void analyzePhoto(imageUrl);
+    void analyzePhoto(file);
   };
 
   const handleTakePhoto = () => {
@@ -31,23 +46,74 @@ export function LogMealPage() {
   const handleRetake = () => {
     analyzeRunId.current += 1; // cancel any in-flight analysis
     setIsAnalyzing(false);
+    setError(null);
     if (selectedImage) {
       URL.revokeObjectURL(selectedImage);
     }
     setSelectedImage(null);
+    setSelectedFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const analyzePhoto = async (_imageUrl: string) => {
+  const analyzePhoto = async (file: File) => {
     const runId = ++analyzeRunId.current;
     setIsAnalyzing(true);
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('Please sign in to log meals');
+      }
+
+      // Compress image
+      const compressedFile = await compressImage(file, {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+      });
+
+      // Upload to Storage
+      const uploadResult = await uploadMealPhoto(compressedFile, user.id);
+      if ('error' in uploadResult) {
+        throw new Error(uploadResult.error);
+      }
+
+      // Check if this analysis was cancelled
       if (analyzeRunId.current !== runId) return;
-      setIsAnalyzing(false);
-      console.log('Analysis complete');
-    }, 2000);
+
+      // Call analyze-meal Edge Function
+      const { data, error: analyzeError } = await supabase.functions.invoke(
+        'analyze-meal',
+        {
+          body: {
+            photoPath: uploadResult.path,
+            useScale: true,
+          },
+        }
+      );
+
+      if (analyzeError) throw analyzeError;
+
+      // Check if this analysis was cancelled
+      if (analyzeRunId.current !== runId) return;
+
+      // Navigate to ConfirmMealPage with results
+      navigate('/confirm', {
+        state: {
+          ...data,
+          photoPath: uploadResult.path,
+        },
+      });
+    } catch (err) {
+      console.error('Error analyzing meal:', err);
+      if (analyzeRunId.current === runId) {
+        setError(err instanceof Error ? err.message : 'Failed to analyze meal');
+        setIsAnalyzing(false);
+      }
+    }
   };
 
   return (
@@ -147,6 +213,15 @@ export function LogMealPage() {
                     Analyzing your meal...
                   </Typography>
                 </div>
+              </Card>
+            )}
+
+            {/* Error Message */}
+            {error && (
+              <Card variant="filled" padding="md" className="bg-red-50 border border-red-200">
+                <Typography variant="body" className="text-red-700">
+                  {error}
+                </Typography>
               </Card>
             )}
 

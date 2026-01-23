@@ -1,4 +1,6 @@
-import { Typography, MacroSummary, MealCard } from '../components/ui';
+import { Typography, MacroSummary, MealCard, Card } from '../components/ui';
+import { useMeals } from '../hooks/useMeals';
+import { useGoals } from '../hooks/useGoals';
 
 /**
  * HomePage - Daily tracking overview
@@ -7,71 +9,52 @@ import { Typography, MacroSummary, MealCard } from '../components/ui';
  */
 
 export function HomePage() {
-  // Mock data - will be replaced with real data from Supabase
+  const { meals, loading: mealsLoading, error: mealsError, getTodayMeals, calculateDailyTotals } = useMeals();
+  const { goals, loading: goalsLoading } = useGoals();
+
+  // Get today's meals
+  const todayMeals = getTodayMeals();
+
+  // Calculate totals
+  const totals = calculateDailyTotals(todayMeals);
+
+  // Combine with goals
   const todayMacros = {
-    calories: { current: 1450, goal: 2000 },
-    protein: { current: 95, goal: 150 },
-    carbs: { current: 180, goal: 250 },
-    fat: { current: 45, goal: 65 },
-    fiber: { current: 18, goal: 30 },
+    calories: { current: totals.calories, goal: goals?.calories || 2000 },
+    protein: { current: totals.protein, goal: goals?.protein || 150 },
+    carbs: { current: totals.carbs, goal: goals?.carbs || 250 },
+    fat: { current: totals.fat, goal: goals?.fat || 65 },
+    fiber: { current: totals.fiber, goal: goals?.fiber || 30 },
   };
 
-  const todayMeals = [
-    {
-      id: '1',
-      timestamp: new Date(2024, 0, 21, 8, 30),
-      photoUrl: undefined,
-      foodItems: [
-        {
-          name: 'Oatmeal with Berries',
-          calories: 350,
-          protein: 12,
-          carbs: 58,
-          fat: 8,
-          weight_g: 250,
-        },
-        {
-          name: 'Greek Yogurt',
-          calories: 150,
-          protein: 15,
-          carbs: 8,
-          fat: 5,
-          weight_g: 170,
-        },
-      ],
-    },
-    {
-      id: '2',
-      timestamp: new Date(2024, 0, 21, 12, 15),
-      photoUrl: undefined,
-      foodItems: [
-        {
-          name: 'Grilled Chicken Breast',
-          calories: 284,
-          protein: 53,
-          carbs: 0,
-          fat: 6,
-          weight_g: 170,
-        },
-        {
-          name: 'Brown Rice',
-          calories: 216,
-          protein: 5,
-          carbs: 45,
-          fat: 2,
-          weight_g: 195,
-        },
-        {
-          name: 'Steamed Broccoli',
-          calories: 55,
-          protein: 4,
-          carbs: 11,
-          fat: 1,
-          weight_g: 156,
-        },
-      ],
-    },
-  ];
+  const loading = mealsLoading || goalsLoading;
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <Typography variant="body" color="secondary">
+            Loading your meals...
+          </Typography>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (mealsError) {
+    return (
+      <div className="px-5 py-8">
+        <Card variant="filled" padding="md" className="bg-red-50 border border-red-200">
+          <Typography variant="body" className="text-red-700">
+            {mealsError}
+          </Typography>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-24 min-h-screen">
@@ -138,12 +121,7 @@ export function HomePage() {
                 key={meal.id}
                 className={`animate-slide-up stagger-${Math.min(index + 2, 4)}`}
               >
-                <MealCard
-                  timestamp={meal.timestamp}
-                  photoUrl={meal.photoUrl}
-                  foodItems={meal.foodItems}
-                  onClick={() => console.log('Meal clicked:', meal.id)}
-                />
+                <MealCard meal={meal} />
               </div>
             ))}
           </div>

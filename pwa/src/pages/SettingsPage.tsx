@@ -1,39 +1,72 @@
 import { Typography, Card, Button, Input } from '../components/ui';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useGoals } from '../hooks/useGoals';
+import { supabase } from '../services/supabase';
 
 /**
  * SettingsPage - Refined settings with visual macro hints
  *
  * Features:
- * - Daily macro goals with color-coded indicators
+ * - Daily macro goals with color-coded indicators (persisted to Supabase)
  * - Account management
  * - Staggered card animations
  */
 
 export function SettingsPage() {
-  const [calorieGoal, setCalorieGoal] = useState('2000');
-  const [proteinGoal, setProteinGoal] = useState('150');
-  const [carbsGoal, setCarbsGoal] = useState('250');
-  const [fatGoal, setFatGoal] = useState('65');
-  const [fiberGoal, setFiberGoal] = useState('30');
+  const { goals, loading, saveGoals } = useGoals();
+  const [userEmail, setUserEmail] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Form state initialized from goals
+  const [formData, setFormData] = useState({
+    calories: 2000,
+    protein: 150,
+    carbs: 250,
+    fat: 65,
+    fiber: 30,
+  });
+
+  // Update form when goals load
+  useEffect(() => {
+    if (goals) {
+      setFormData({
+        calories: goals.calories,
+        protein: goals.protein,
+        carbs: goals.carbs,
+        fat: goals.fat,
+        fiber: goals.fiber,
+      });
+    }
+  }, [goals]);
+
+  // Fetch user email
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserEmail(user?.email || 'Not signed in');
+    };
+    fetchUser();
+  }, []);
 
   const handleSaveGoals = async () => {
     setIsSaving(true);
-    console.log('Saving goals:', {
-      calories: calorieGoal,
-      protein: proteinGoal,
-      carbs: carbsGoal,
-      fat: fatGoal,
-      fiber: fiberGoal,
-    });
-    // TODO: Save to Supabase
-    setTimeout(() => setIsSaving(false), 1000);
+    try {
+      await saveGoals(formData);
+      console.log('Goals saved successfully');
+    } catch (err) {
+      console.error('Failed to save goals:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleSignOut = () => {
-    console.log('Signing out');
-    // TODO: Implement Supabase sign out
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to sign out:', err);
+    }
   };
 
   return (
@@ -74,9 +107,10 @@ export function SettingsPage() {
               </div>
               <Input
                 type="number"
-                value={calorieGoal}
-                onChange={(e) => setCalorieGoal(e.target.value)}
+                value={formData.calories.toString()}
+                onChange={(e) => setFormData({ ...formData, calories: parseInt(e.target.value) || 0 })}
                 placeholder="2000"
+                disabled={loading}
               />
             </div>
 
@@ -91,9 +125,10 @@ export function SettingsPage() {
                 </div>
                 <Input
                   type="number"
-                  value={proteinGoal}
-                  onChange={(e) => setProteinGoal(e.target.value)}
+                  value={formData.protein.toString()}
+                  onChange={(e) => setFormData({ ...formData, protein: parseInt(e.target.value) || 0 })}
                   placeholder="150"
+                  disabled={loading}
                 />
               </div>
 
@@ -106,9 +141,10 @@ export function SettingsPage() {
                 </div>
                 <Input
                   type="number"
-                  value={carbsGoal}
-                  onChange={(e) => setCarbsGoal(e.target.value)}
+                  value={formData.carbs.toString()}
+                  onChange={(e) => setFormData({ ...formData, carbs: parseInt(e.target.value) || 0 })}
                   placeholder="250"
+                  disabled={loading}
                 />
               </div>
 
@@ -121,9 +157,10 @@ export function SettingsPage() {
                 </div>
                 <Input
                   type="number"
-                  value={fatGoal}
-                  onChange={(e) => setFatGoal(e.target.value)}
+                  value={formData.fat.toString()}
+                  onChange={(e) => setFormData({ ...formData, fat: parseInt(e.target.value) || 0 })}
                   placeholder="65"
+                  disabled={loading}
                 />
               </div>
 
@@ -136,9 +173,10 @@ export function SettingsPage() {
                 </div>
                 <Input
                   type="number"
-                  value={fiberGoal}
-                  onChange={(e) => setFiberGoal(e.target.value)}
+                  value={formData.fiber.toString()}
+                  onChange={(e) => setFormData({ ...formData, fiber: parseInt(e.target.value) || 0 })}
                   placeholder="30"
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -147,6 +185,7 @@ export function SettingsPage() {
               title={isSaving ? 'Saving...' : 'Save Goals'}
               onClick={handleSaveGoals}
               loading={isSaving}
+              disabled={loading || isSaving}
               size="lg"
               fullWidth
             />
@@ -166,7 +205,7 @@ export function SettingsPage() {
               </Typography>
               <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
                 <Typography variant="body" className="font-mono text-sm">
-                  user@example.com
+                  {userEmail}
                 </Typography>
               </div>
             </div>

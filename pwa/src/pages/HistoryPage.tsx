@@ -1,46 +1,62 @@
-import { Typography, MealCard } from '../components/ui';
+import { Typography, MealCard, Card } from '../components/ui';
+import { useMeals } from '../hooks/useMeals';
+import type { Meal } from '../hooks/useMeals';
 
 /**
  * HistoryPage - Past meals with refined grouping
  */
 
 export function HistoryPage() {
-  // Mock data
-  const mealsByDate = [
-    {
-      date: new Date(2024, 0, 21),
-      meals: [
-        {
-          id: '1',
-          timestamp: new Date(2024, 0, 21, 8, 30),
-          foodItems: [
-            { name: 'Oatmeal with Berries', calories: 350, protein: 12, carbs: 58, fat: 8, weight_g: 250 },
-          ],
-        },
-        {
-          id: '2',
-          timestamp: new Date(2024, 0, 21, 12, 15),
-          foodItems: [
-            { name: 'Chicken Salad', calories: 420, protein: 38, carbs: 22, fat: 18, weight_g: 320 },
-          ],
-        },
-      ],
-    },
-    {
-      date: new Date(2024, 0, 20),
-      meals: [
-        {
-          id: '3',
-          timestamp: new Date(2024, 0, 20, 13, 0),
-          foodItems: [
-            { name: 'Turkey Sandwich', calories: 380, protein: 28, carbs: 42, fat: 10, weight_g: 280 },
-          ],
-        },
-      ],
-    },
-  ];
+  const { meals, loading, error, calculateDailyTotals } = useMeals();
 
-  const totalMeals = mealsByDate.reduce((sum, day) => sum + day.meals.length, 0);
+  // Group meals by date
+  const mealsByDate = meals.reduce((groups, meal) => {
+    const date = new Date(meal.timestamp).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+
+    if (!groups[date]) {
+      groups[date] = [];
+    }
+    groups[date].push(meal);
+    return groups;
+  }, {} as Record<string, Meal[]>);
+
+  // Sort dates descending
+  const sortedDates = Object.keys(mealsByDate).sort((a, b) =>
+    new Date(b).getTime() - new Date(a).getTime()
+  );
+
+  const totalMeals = meals.length;
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <Typography variant="body" color="secondary">
+            Loading your history...
+          </Typography>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="px-5 py-8">
+        <Card variant="filled" padding="md" className="bg-red-50 border border-red-200">
+          <Typography variant="body" className="text-red-700">
+            {error}
+          </Typography>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -56,7 +72,7 @@ export function HistoryPage() {
 
       {/* Meals by Date */}
       <div className="px-5 py-5">
-        {mealsByDate.length === 0 ? (
+        {sortedDates.length === 0 ? (
           <div className="text-center py-16 animate-fade-in">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
               <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,38 +85,35 @@ export function HistoryPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {mealsByDate.map((day, dayIndex) => {
-              const isToday = day.date.toDateString() === new Date().toDateString();
-              const totalDayCalories = day.meals.reduce((sum, meal) =>
-                sum + meal.foodItems.reduce((mealSum, item) => mealSum + item.calories, 0), 0
-              );
+            {sortedDates.map((date, dayIndex) => {
+              const mealsForDate = mealsByDate[date];
+              const dailyTotals = calculateDailyTotals(mealsForDate);
+
+              // Parse date for comparison
+              const dateObj = new Date(mealsForDate[0].timestamp);
+              const isToday = dateObj.toDateString() === new Date().toDateString();
 
               return (
-                <div key={dayIndex} className={`animate-slide-up stagger-${Math.min(dayIndex + 1, 4)}`}>
+                <div key={date} className={`animate-slide-up stagger-${Math.min(dayIndex + 1, 4)}`}>
                   {/* Date header */}
                   <div className="flex items-baseline justify-between mb-3 pb-2 border-b border-gray-200">
                     <div>
                       <Typography variant="label" className="text-gray-900">
-                        {isToday ? 'Today' : day.date.toLocaleDateString('en-US', { weekday: 'long' })}
+                        {isToday ? 'Today' : dateObj.toLocaleDateString('en-US', { weekday: 'long' })}
                       </Typography>
                       <Typography variant="caption" color="tertiary" className="ml-2">
-                        {day.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {date}
                       </Typography>
                     </div>
                     <Typography variant="caption" color="tertiary" className="font-mono tabular-nums">
-                      {totalDayCalories} cal
+                      {dailyTotals.calories} cal
                     </Typography>
                   </div>
 
                   {/* Meals */}
                   <div className="space-y-3">
-                    {day.meals.map((meal) => (
-                      <MealCard
-                        key={meal.id}
-                        timestamp={meal.timestamp}
-                        foodItems={meal.foodItems}
-                        onClick={() => console.log('Meal clicked:', meal.id)}
-                      />
+                    {mealsForDate.map((meal) => (
+                      <MealCard key={meal.id} meal={meal} />
                     ))}
                   </div>
                 </div>
