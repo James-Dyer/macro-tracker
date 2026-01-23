@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Typography, Button, Card } from '../components/ui';
 import { supabase } from '../services/supabase';
 import { compressImage, validateImage, uploadMealPhoto } from '../utils/imageUtils';
+import { logger } from '../utils/logger';
+import { parseSupabaseFunctionError } from '../utils/errors';
 
 /**
  * LogMealPage - Photo capture with refined UI
@@ -92,7 +94,15 @@ export function LogMealPage() {
         }
       );
 
-      if (analyzeError) throw analyzeError;
+      if (analyzeError) {
+        // Parse structured error from Edge Function
+        const appError = parseSupabaseFunctionError(analyzeError);
+        logger.error('Edge Function error', {
+          error: appError,
+          photoPath: uploadResult.path,
+        });
+        throw new Error(appError.message);
+      }
 
       // Check if this analysis was cancelled
       if (analyzeRunId.current !== runId) return;
@@ -105,9 +115,14 @@ export function LogMealPage() {
         },
       });
     } catch (err) {
-      console.error('Error analyzing meal:', err);
+      const appError = parseSupabaseFunctionError(err);
+      logger.error('Meal analysis failed', {
+        error: appError,
+        hasPhoto: !!file,
+      });
+
       if (analyzeRunId.current === runId) {
-        setError(err instanceof Error ? err.message : 'Failed to analyze meal');
+        setError(appError.message);
         setIsAnalyzing(false);
       }
     }

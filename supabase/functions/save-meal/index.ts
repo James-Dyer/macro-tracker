@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Logger } from '../_shared/logger.ts';
+import { ApiError, ErrorCode, createErrorResponse } from '../_shared/errors.ts';
+import { EnvValidator } from '../_shared/env.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,6 +10,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+function generateRequestId(): string {
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
 
 interface FoodItemData {
   name: string;
@@ -31,11 +38,25 @@ interface SaveMealResponse {
   error?: string;
 }
 
+// Validate environment variables at startup
+const envValidation = EnvValidator.validate({
+  required: ['SUPABASE_URL', 'SUPABASE_ANON_KEY'],
+});
+
+if (!envValidation.valid) {
+  console.error('Missing required environment variables:', envValidation.missing);
+}
+
 serve(async (req) => {
+  const requestId = generateRequestId();
+  const logger = new Logger('save-meal', { requestId });
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  logger.info('Request received', { method: req.method });
 
   // Method guard: only accept POST
   if (req.method !== "POST") {
@@ -49,12 +70,11 @@ serve(async (req) => {
     // Get Supabase client with user's auth token
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 401,
-        }
+      logger.warn('Missing authorization header');
+      throw new ApiError(
+        ErrorCode.MISSING_AUTH,
+        'Missing authorization header',
+        401
       );
     }
 
@@ -75,14 +95,15 @@ serve(async (req) => {
     } = await supabaseClient.auth.getUser();
 
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 403,
-        }
+      logger.error('Authentication failed', userError);
+      throw new ApiError(
+        ErrorCode.INVALID_AUTH,
+        'Unauthorized',
+        403
       );
     }
+
+    logger.info('User authenticated', { userId: user.id });
 
     // Parse request
     const {
@@ -92,46 +113,46 @@ serve(async (req) => {
       foodItems,
     }: SaveMealRequest = await req.json();
 
+    logger.info('Saving meal', {
+      hasPhotoUrl: !!photoUrl,
+      hasNotes: !!notes,
+      foodItemCount: foodItems?.length || 0
+    });
+
     // Validate food items
     if (!foodItems || foodItems.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "At least one food item is required" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        }
+      logger.warn('No food items provided');
+      throw new ApiError(
+        ErrorCode.VALIDATION_ERROR,
+        'At least one food item is required',
+        400,
+        { hasFoodItems: !!foodItems, itemCount: foodItems?.length || 0 }
       );
     }
 
     // Validate each food item
-    for (const item of foodItems) {
+    const invalidItems: Array<{index: number; reason: string}> = [];
+    for (let i = 0; i < foodItems.length; i++) {
+      const item = foodItems[i];
       if (!item.name || item.name.trim() === "") {
-        return new Response(
-          JSON.stringify({ error: "Food item name is required" }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 400,
-          }
-        );
+        invalidItems.push({ index: i, reason: 'Missing name' });
       }
       if (item.weightGrams <= 0) {
-        return new Response(
-          JSON.stringify({ error: "Food item weight must be positive" }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 400,
-          }
-        );
+        invalidItems.push({ index: i, reason: 'Weight must be positive' });
       }
       if (item.calories < 0) {
-        return new Response(
-          JSON.stringify({ error: "Calories cannot be negative" }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 400,
-          }
-        );
+        invalidItems.push({ index: i, reason: 'Calories cannot be negative' });
       }
+    }
+
+    if (invalidItems.length > 0) {
+      logger.warn('Invalid food items detected', { invalidItems });
+      throw new ApiError(
+        ErrorCode.VALIDATION_ERROR,
+        'Invalid food items detected',
+        400,
+        { invalidItems }
+      );
     }
 
     // Insert meal record
@@ -147,9 +168,16 @@ serve(async (req) => {
       .single();
 
     if (mealError) {
-      console.error("Error inserting meal:", mealError);
-      throw new Error(`Failed to save meal: ${mealError.message}`);
+      logger.error('Failed to insert meal', mealError);
+      throw new ApiError(
+        ErrorCode.DATABASE_ERROR,
+        'Failed to save meal',
+        500,
+        { error: mealError.message }
+      );
     }
+
+    logger.info('Meal inserted successfully', { mealId: meal.id });
 
     // Insert food items
     const foodItemsToInsert = foodItems.map((item) => ({
@@ -168,35 +196,43 @@ serve(async (req) => {
       .insert(foodItemsToInsert);
 
     if (itemsError) {
-      console.error("Error inserting food items:", itemsError);
+      logger.error('Failed to insert food items', { mealId: meal.id, error: itemsError });
 
-      // Rollback: delete the meal if food items failed
-      await supabaseClient.from("meal").delete().eq("id", meal.id);
+      // Attempt to rollback (delete meal)
+      const { error: deleteError } = await supabaseClient
+        .from('meal')
+        .delete()
+        .eq('id', meal.id);
 
-      throw new Error(`Failed to save food items: ${itemsError.message}`);
+      if (deleteError) {
+        logger.error('Failed to rollback meal deletion', { mealId: meal.id, error: deleteError });
+      } else {
+        logger.info('Successfully rolled back meal insertion', { mealId: meal.id });
+      }
+
+      throw new ApiError(
+        ErrorCode.DATABASE_ERROR,
+        'Failed to save food items',
+        500,
+        { error: itemsError.message, mealId: meal.id }
+      );
     }
+
+    logger.info('Food items inserted successfully', { mealId: meal.id, count: foodItems.length });
 
     const response: SaveMealResponse = {
       mealId: meal.id,
       success: true,
     };
 
+    logger.info('Meal saved successfully', { mealId: meal.id });
+
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    console.error("Error in save-meal:", error);
-
-    const errorResponse: SaveMealResponse = {
-      mealId: "",
-      success: false,
-      error: error.message || "Failed to save meal",
-    };
-
-    return new Response(JSON.stringify(errorResponse), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    logger.error('save-meal error', error);
+    return createErrorResponse(error, requestId, corsHeaders);
   }
 });

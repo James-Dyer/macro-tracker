@@ -133,11 +133,11 @@ An AI-powered mobile app that recognizes food from photos and integrates with fo
 
 ## 4. Technical Architecture
 
-### Frontend: React Native
+### Frontend: React PWA (Vite + Tailwind)
 
-- **Why React Native:** Cross-platform deployment (iOS + Android) with a single codebase
+- **Why React PWA:** Single responsive web codebase installable across platforms (desktop/mobile) with no app store friction
 - **TypeScript:** Type safety and better developer experience
-- **Hermes Engine:** Fast startup and optimized performance
+- **PWA:** Offline caching, install prompts, and add-to-home-screen support
 
 ### Backend: Supabase
 
@@ -177,7 +177,7 @@ An AI-powered mobile app that recognizes food from photos and integrates with fo
 
 ## 5. Learning-First Development Approach
 
-> **Development Philosophy:** This project prioritizes learning over speed. Implementation should be instructional—explaining concepts, showing patterns, discussing trade-offs. The goal is to master React and React Native fundamentals, not just produce working code.
+> **Development Philosophy:** This project prioritizes learning over speed. Implementation should be instructional—explaining concepts, showing patterns, discussing trade-offs. The goal is to master React and web/PWA fundamentals, not just produce working code.
 
 ### Core React Concepts to Master
 
@@ -191,16 +191,16 @@ An AI-powered mobile app that recognizes food from photos and integrates with fo
 | useMemo/useCallback | Lists, heavy calculations | Referential equality, when optimization matters |
 | Custom Hooks | Reusable logic | Extracting and sharing stateful logic |
 
-### React Native Specifics
+### Web/PWA Specifics
 
 | Topic | What to Learn |
 |-------|---------------|
-| Navigation | React Navigation - stack, tab, drawer patterns |
-| Styling | StyleSheet vs inline styles - why RN doesn't use CSS |
-| Lists | FlatList/SectionList - virtualization, keyExtractor, why not .map() |
-| Platform code | Platform.OS, .ios.js/.android.js files |
-| Native modules | When/why to bridge to native code |
-| Gestures | Touch events, pan responders |
+| Routing | React Router - nested routes, protected routes, navigation patterns |
+| Styling | Tailwind CSS + design tokens; responsive layouts without StyleSheet |
+| Media capture | Browser camera/file input (`capture` attr, permissions, getUserMedia fallback) |
+| PWA | Service workers, caching strategies, offline UX, install prompts |
+| Performance | List virtualization/windowing, memoization, bundle splitting |
+| Accessibility | ARIA for forms, focus management, keyboard navigation |
 
 ### Rendering & Performance Concepts
 
@@ -228,24 +228,24 @@ When building each feature:
 | Feature | Description | React Concepts Learned |
 |---------|-------------|----------------------|
 | **Auth screens** | Sign up, login, password reset | useState for forms, useEffect for session check, useContext for auth state |
-| **Photo capture** | Camera integration, permissions | Native modules, async/await, permissions handling |
+| **Photo capture** | Camera/file input integration, permissions | Media capture APIs, async/await, permissions handling |
 | **AI recognition UI** | Send photo, display results | Loading states, error handling, useReducer for complex state |
 | **Confirmation/edit screen** | Review and adjust AI results | Controlled inputs, form validation, lifting state up |
 | **Meal logging** | Save meals to database | API calls with useEffect, optimistic updates, error boundaries |
 | **Daily tracking view** | Today's meals and totals | useMemo for calculations, derived state patterns |
 | **Goal setting** | Set calorie/macro targets (protein, carbs, fat, fiber) | Persistent storage, useCallback for handlers |
-| **Calendar view** | Historical meal data | FlatList/SectionList, performance optimization, virtualization |
+| **Calendar view** | Historical meal data | List virtualization/windowing, performance optimization |
 | **Dashboard** | Progress overview | Data visualization, custom hooks for data fetching |
 
 ### Build Order (Pedagogical Sequence)
 
-1. **Static UI first** - Learn StyleSheet, Flexbox, component composition
+1. **Static UI first** - Learn Tailwind utility patterns, Flexbox/grid, component composition
 2. **Add local state** - useState, controlled components
-3. **Navigation** - React Navigation setup, passing params
+3. **Navigation** - React Router setup, nested routes, params
 4. **Auth flow** - useContext, protected routes
 5. **API integration** - useEffect, loading/error states
 6. **Complex state** - useReducer for meal editing
-7. **Performance** - useMemo, useCallback, FlatList optimization
+7. **Performance** - useMemo, useCallback, list virtualization/windowing
 8. **Polish** - Custom hooks, error boundaries, offline support
 
 ### Post-MVP Features (STILL TBD) (v1.x)
@@ -415,7 +415,7 @@ fiber: float (grams)
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Framework | React Native | Cross-platform with familiar React patterns, learning opportunity |
+| Framework | React PWA (Vite + Tailwind) | Installable web app with familiar React patterns, minimal deployment friction |
 | Scale Requirement | Flexible (scale-first default) | Hypothesis to validate via analytics |
 | AI Service | Abstraction layer, start with Gemini | Cost-effective, test and compare |
 | Backend | Supabase | Full-featured, open-source, predictable pricing |

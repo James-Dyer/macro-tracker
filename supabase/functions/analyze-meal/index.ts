@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { Logger } from '../_shared/logger.ts';
+import { ApiError, ErrorCode, createErrorResponse } from '../_shared/errors.ts';
+import { EnvValidator } from '../_shared/env.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,6 +10,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+function generateRequestId(): string {
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
 
 interface AnalyzeMealRequest {
   photoPath: string; // Path in Supabase Storage (e.g., "user-id/timestamp-random.jpg")
@@ -32,11 +39,27 @@ interface AnalyzeMealResponse {
   error?: string;
 }
 
+// Validate environment variables at startup
+const envValidation = EnvValidator.validate({
+  required: ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'],
+  optional: ['GEMINI_API_KEY', 'OPENAI_API_KEY'],
+});
+
+if (!envValidation.valid) {
+  console.error('Missing required environment variables:', envValidation.missing);
+  // Function will still start but will fail on first request
+}
+
 serve(async (req) => {
+  const requestId = generateRequestId();
+  const logger = new Logger('analyze-meal', { requestId });
+
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  logger.info('Request received', { method: req.method });
 
   // Method guard: only accept POST
   if (req.method !== "POST") {
@@ -50,12 +73,11 @@ serve(async (req) => {
     // Verify authentication
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 401,
-        }
+      logger.warn('Missing authorization header');
+      throw new ApiError(
+        ErrorCode.MISSING_AUTH,
+        'Missing authorization header',
+        401
       );
     }
 
@@ -77,39 +99,44 @@ serve(async (req) => {
     } = await supabaseClient.auth.getUser();
 
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 403,
-        }
+      logger.error('Authentication failed', userError);
+      throw new ApiError(
+        ErrorCode.INVALID_AUTH,
+        'Unauthorized',
+        403
       );
     }
+
+    logger.info('User authenticated', { userId: user.id });
 
     // Parse request body
     const { photoPath, useScale = true }: AnalyzeMealRequest = await req.json();
 
     if (!photoPath) {
-      return new Response(
-        JSON.stringify({ error: "Missing photoPath" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        }
+      logger.warn('Missing photoPath in request');
+      throw new ApiError(
+        ErrorCode.VALIDATION_ERROR,
+        'Missing photoPath',
+        400
       );
     }
+
+    logger.info('Processing meal analysis', { photoPath, useScale });
 
     // Download image from Supabase Storage
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      return new Response(
-        JSON.stringify({ error: "Supabase configuration missing" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 500,
-        }
+      logger.error('Supabase configuration missing', {
+        hasUrl: !!supabaseUrl,
+        hasServiceKey: !!supabaseServiceKey
+      });
+      throw new ApiError(
+        ErrorCode.MISSING_CONFIG,
+        'Supabase configuration missing',
+        500,
+        { missing: [!supabaseUrl && 'SUPABASE_URL', !supabaseServiceKey && 'SUPABASE_SERVICE_ROLE_KEY'].filter(Boolean) }
       );
     }
 
@@ -120,16 +147,19 @@ serve(async (req) => {
       .download(photoPath);
 
     if (downloadError || !imageBlob) {
-      return new Response(
-        JSON.stringify({
-          error: `Failed to download image: ${downloadError?.message || "Unknown error"}`
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        }
+      logger.error('Failed to download image from storage', {
+        photoPath,
+        error: downloadError?.message
+      });
+      throw new ApiError(
+        ErrorCode.VALIDATION_ERROR,
+        `Failed to download image: ${downloadError?.message || "Unknown error"}`,
+        400,
+        { photoPath }
       );
     }
+
+    logger.info('Image downloaded successfully', { size: imageBlob.size });
 
     // Convert blob to base64
     const arrayBuffer = await imageBlob.arrayBuffer();
@@ -146,64 +176,93 @@ serve(async (req) => {
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
 
     if (!geminiApiKey && !openaiApiKey) {
-      return new Response(
-        JSON.stringify({ error: "No AI API keys configured" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 500,
-        }
+      logger.error('No AI API keys configured', {
+        geminiConfigured: false,
+        openaiConfigured: false,
+      });
+
+      throw new ApiError(
+        ErrorCode.MISSING_CONFIG,
+        'AI service is not configured. Please contact support.',
+        500,
+        { missingKeys: ['GEMINI_API_KEY', 'OPENAI_API_KEY'] }
       );
     }
+
+    logger.info('API keys available', {
+      gemini: !!geminiApiKey,
+      openai: !!openaiApiKey,
+    });
 
     let response: AnalyzeMealResponse;
 
     // Try Gemini first (cheaper, faster)
     if (geminiApiKey) {
       try {
-        response = await analyzeWithGemini(image, useScale, geminiApiKey);
+        logger.info('Attempting Gemini API call');
+        response = await analyzeWithGemini(image, useScale, geminiApiKey, logger);
+        logger.info('Gemini API success', { foodCount: response.foods.length });
       } catch (geminiError) {
-        console.error("Gemini API failed:", geminiError);
+        logger.error('Gemini API failed', geminiError);
 
         // Fallback to OpenAI if Gemini fails
         if (openaiApiKey) {
-          console.log("Falling back to OpenAI GPT-4V");
-          response = await analyzeWithOpenAI(image, useScale, openaiApiKey);
+          logger.info('Falling back to OpenAI GPT-4V');
+          try {
+            response = await analyzeWithOpenAI(image, useScale, openaiApiKey, logger);
+            logger.info('OpenAI API success', { foodCount: response.foods.length });
+          } catch (openaiError) {
+            logger.error('OpenAI API also failed', openaiError);
+            throw new ApiError(
+              ErrorCode.EXTERNAL_API_ERROR,
+              'All AI services failed. Please try again later.',
+              503,
+              { geminiError: geminiError.message, openaiError: openaiError.message }
+            );
+          }
         } else {
-          throw geminiError;
+          throw new ApiError(
+            ErrorCode.EXTERNAL_API_ERROR,
+            'AI analysis failed and no fallback available',
+            503,
+            { error: geminiError.message }
+          );
         }
       }
     } else if (openaiApiKey) {
-      response = await analyzeWithOpenAI(image, useScale, openaiApiKey);
-    } else {
-      throw new Error("No AI provider available");
+      // Only OpenAI available
+      logger.info('Only OpenAI configured, using GPT-4V');
+      try {
+        response = await analyzeWithOpenAI(image, useScale, openaiApiKey, logger);
+        logger.info('OpenAI API success', { foodCount: response.foods.length });
+      } catch (openaiError) {
+        logger.error('OpenAI API failed', openaiError);
+        throw new ApiError(
+          ErrorCode.EXTERNAL_API_ERROR,
+          'AI analysis failed',
+          503,
+          { error: openaiError.message }
+        );
+      }
     }
+
+    logger.info('Analysis complete', { foodCount: response.foods.length });
 
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    console.error("Error in analyze-meal:", error);
-
-    return new Response(
-      JSON.stringify({
-        error: error.message || "Failed to analyze meal",
-        foods: [],
-        scaleDetected: false,
-        confidence: 0,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+    logger.error('analyze-meal error', error);
+    return createErrorResponse(error, requestId, corsHeaders);
   }
 });
 
 async function analyzeWithGemini(
   imageBase64: string,
   detectScale: boolean,
-  apiKey: string
+  apiKey: string,
+  logger: Logger
 ): Promise<AnalyzeMealResponse> {
   // Remove data URL prefix if present
   const base64Image = imageBase64.replace(/^data:image\/\w+;base64,/, "");
@@ -314,14 +373,19 @@ Guidelines:
     const result = JSON.parse(jsonMatch[1].trim());
     return result;
   } catch (parseError) {
-    throw new Error(`Failed to parse Gemini JSON: ${parseError.message}`);
+    logger.error('Failed to parse Gemini JSON response', {
+      responseText: text.substring(0, 500), // Log first 500 chars
+      error: parseError,
+    });
+    throw new Error(`Invalid JSON response from Gemini: ${parseError.message}`);
   }
 }
 
 async function analyzeWithOpenAI(
   imageBase64: string,
   detectScale: boolean,
-  apiKey: string
+  apiKey: string,
+  logger: Logger
 ): Promise<AnalyzeMealResponse> {
   // TODO: Update to latest vision model (gpt-4o, gpt-4-turbo, etc.)
   // Consider using response_format: { type: "json_object" } for structured output
@@ -403,6 +467,14 @@ Guidelines:
     throw new Error("Could not parse JSON from OpenAI response");
   }
 
-  const result = JSON.parse(jsonMatch[1]);
-  return result;
+  try {
+    const result = JSON.parse(jsonMatch[1]);
+    return result;
+  } catch (parseError) {
+    logger.error('Failed to parse OpenAI JSON response', {
+      responseText: text.substring(0, 500),
+      error: parseError,
+    });
+    throw new Error(`Invalid JSON response from OpenAI: ${parseError.message}`);
+  }
 }
