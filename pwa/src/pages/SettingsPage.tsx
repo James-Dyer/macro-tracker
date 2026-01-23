@@ -1,5 +1,6 @@
 import { Typography, Card, Button, Input } from '../components/ui';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGoals } from '../hooks/useGoals';
 import { supabase } from '../services/supabase';
 
@@ -13,6 +14,7 @@ import { supabase } from '../services/supabase';
  */
 
 export function SettingsPage() {
+  const navigate = useNavigate();
   const { goals, loading, saveGoals } = useGoals();
   const [userEmail, setUserEmail] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
@@ -63,9 +65,10 @@ export function SettingsPage() {
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
-      window.location.reload();
+      navigate('/login', { replace: true });
     } catch (err) {
       console.error('Failed to sign out:', err);
+      alert('Failed to sign out. Please try again.');
     }
   };
 

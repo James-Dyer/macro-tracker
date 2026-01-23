@@ -50,7 +50,10 @@ export function useMeals() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        throw new Error("Not authenticated");
+        // Route guard handles this, but be defensive
+        setMeals([]);
+        setLoading(false);
+        return;
       }
 
       const { data, error: fetchError } = await supabase

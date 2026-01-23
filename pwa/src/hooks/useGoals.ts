@@ -32,7 +32,16 @@ export function useGoals() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        throw new Error("Not authenticated");
+        // Route guard handles this, but be defensive
+        setGoals({
+          calories: 2000,
+          protein: 150,
+          carbs: 250,
+          fat: 65,
+          fiber: 30,
+        });
+        setLoading(false);
+        return;
       }
 
       const { data, error: fetchError } = await supabase
@@ -81,6 +90,7 @@ export function useGoals() {
       } = await supabase.auth.getUser();
 
       if (!user) {
+        // Route guard handles this, but be defensive
         throw new Error("Not authenticated");
       }
 

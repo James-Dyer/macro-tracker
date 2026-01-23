@@ -59,6 +59,33 @@ serve(async (req) => {
       );
     }
 
+    // Create Supabase client with user's auth token
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    // Validate JWT by extracting user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser();
+
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 403,
+        }
+      );
+    }
+
     // Parse request body
     const { photoPath, useScale = true }: AnalyzeMealRequest = await req.json();
 
