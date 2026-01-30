@@ -39,15 +39,16 @@ interface AnalyzeMealResponse {
   error?: string;
 }
 
-// Validate environment variables at startup
+// Validate environment variables at startup - FAIL HARD if missing
 const envValidation = EnvValidator.validate({
-  required: ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'],
+  required: ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY'],
   optional: ['GEMINI_API_KEY', 'OPENAI_API_KEY'],
 });
 
 if (!envValidation.valid) {
-  console.error('Missing required environment variables:', envValidation.missing);
-  // Function will still start but will fail on first request
+  const errorMsg = `Missing required environment variables: ${envValidation.missing.join(', ')}`;
+  console.error(errorMsg);
+  throw new Error(errorMsg);
 }
 
 serve(async (req) => {
@@ -60,6 +61,13 @@ serve(async (req) => {
   }
 
   logger.info('Request received', { method: req.method });
+
+  // Debug: log all headers
+  const headers: Record<string, string> = {};
+  req.headers.forEach((value, key) => {
+    headers[key] = value.substring(0, 50); // Truncate for security
+  });
+  logger.info('Request headers', { headers });
 
   // Method guard: only accept POST
   if (req.method !== "POST") {
@@ -81,25 +89,29 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client with user's auth token
+    // Extract JWT token from Authorization header
+    const token = authHeader.replace('Bearer ', '');
+
+    // Create Supabase client for auth validation
+    // Note: Must have valid SUPABASE_ANON_KEY or this will fail
     const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
+      EnvValidator.getRequired("SUPABASE_URL"),
+      EnvValidator.getRequired("SUPABASE_ANON_KEY")
     );
 
-    // Validate JWT by extracting user
+    // Validate JWT by passing token explicitly to getUser()
+    // This is required when JWT verification is disabled on the Edge Function
     const {
       data: { user },
       error: userError,
-    } = await supabaseClient.auth.getUser();
+    } = await supabaseClient.auth.getUser(token);
 
     if (userError || !user) {
-      logger.error('Authentication failed', userError);
+      logger.error('Authentication failed', {
+        error: userError,
+        hasToken: !!token,
+        tokenLength: token?.length
+      });
       throw new ApiError(
         ErrorCode.INVALID_AUTH,
         'Unauthorized',

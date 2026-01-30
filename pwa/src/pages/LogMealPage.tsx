@@ -83,10 +83,19 @@ export function LogMealPage() {
       // Check if this analysis was cancelled
       if (analyzeRunId.current !== runId) return;
 
-      // Call analyze-meal Edge Function
+      // Get session for auth header
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Session expired. Please log in again.');
+      }
+
+      // Call analyze-meal Edge Function with explicit Authorization header
       const { data, error: analyzeError } = await supabase.functions.invoke(
         'analyze-meal',
         {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
           body: {
             photoPath: uploadResult.path,
             useScale: true,

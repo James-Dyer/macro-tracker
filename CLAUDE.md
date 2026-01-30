@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Review `PRD.md` for product requirements and context before making authoritative decisions.
 - If you are Claude Code and implementing anything related to frontend UI, you must use the "Frontend Design" plugin.
 - If you need to work with anything for Supabase (deployment, table updates, etc.), you must use the Supabase MCP server. If the Supabase MCP server is not active or is inaccessible, do not use the Supabase CLI; stop and tell the user that Supabase operations require the MCP server.
+- **CRITICAL:** When deploying Edge Functions via Supabase MCP, always set `verify_jwt: false` (equivalent to `--no-verify-jwt` flag). All functions manually validate JWTs using the pattern in "Edge Function Patterns" section.
 
 ## Project Overview
 
@@ -132,17 +133,48 @@ food_item (meal_id FK, name, weight_g, calories, protein, carbs, fat, fiber)
 
 ## Edge Function Patterns
 
-**Authentication:**
+**CRITICAL: JWT Verification Configuration**
+- All Edge Functions are deployed with `--no-verify-jwt` flag (JWT verification disabled)
+- Functions MUST manually validate JWTs using the pattern below
+- When deploying via MCP server, ensure `verify_jwt: false` is set
+
+**Authentication (Manual JWT Validation):**
 ```typescript
-// Always validate JWT before processing
+// Extract JWT token from Authorization header
 const authHeader = req.headers.get("Authorization");
+if (!authHeader) {
+  throw new ApiError(ErrorCode.MISSING_AUTH, 'Missing authorization header', 401);
+}
+
+const token = authHeader.replace('Bearer ', '');
+
+// Create Supabase client with REQUIRED environment variables
 const supabaseClient = createClient(
-  Deno.env.get("SUPABASE_URL"),
-  Deno.env.get("SUPABASE_ANON_KEY"),
-  { global: { headers: { Authorization: authHeader } } }
+  EnvValidator.getRequired("SUPABASE_URL"),
+  EnvValidator.getRequired("SUPABASE_ANON_KEY")
 );
-const { data: { user }, error } = await supabaseClient.auth.getUser();
-if (error || !user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403 });
+
+// Validate JWT by passing token EXPLICITLY to getUser()
+const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+
+if (userError || !user) {
+  throw new ApiError(ErrorCode.INVALID_AUTH, 'Unauthorized', 403);
+}
+```
+
+**Environment Variables (Fail Fast):**
+```typescript
+// Always validate required env vars at startup - FAIL HARD if missing
+const envValidation = EnvValidator.validate({
+  required: ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY'],
+  optional: ['GEMINI_API_KEY', 'OPENAI_API_KEY'],
+});
+
+if (!envValidation.valid) {
+  const errorMsg = `Missing required environment variables: ${envValidation.missing.join(', ')}`;
+  console.error(errorMsg);
+  throw new Error(errorMsg);
+}
 ```
 
 **Service Role Usage:**

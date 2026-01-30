@@ -112,6 +112,12 @@ export function ConfirmMealPage() {
     setError(null);
 
     try {
+      // Get session for auth header
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       // Get public URL for the photo
       const { data: urlData } = supabase.storage
         .from("meal-photos")
@@ -121,6 +127,9 @@ export function ConfirmMealPage() {
       const { error: saveError } = await supabase.functions.invoke(
         "save-meal",
         {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
           body: {
             photoUrl: urlData.publicUrl,
             foodItems: foods.map((food) => ({
