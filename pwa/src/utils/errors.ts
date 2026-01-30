@@ -1,11 +1,17 @@
-export enum ErrorCategory {
-  AUTH = 'AUTH',           // Authentication/authorization failures
-  VALIDATION = 'VALIDATION', // User input validation errors
-  NETWORK = 'NETWORK',      // Network connectivity issues
-  API = 'API',              // Edge Function/Supabase API errors
-  STORAGE = 'STORAGE',      // File upload/download errors
-  UNKNOWN = 'UNKNOWN',      // Unexpected errors
-}
+// Using a const object instead of enum for erasableSyntaxOnly compatibility
+// This creates a type-safe constant object that can be erased at compile time
+export const ErrorCategory = {
+  AUTH: 'AUTH',           // Authentication/authorization failures
+  VALIDATION: 'VALIDATION', // User input validation errors
+  NETWORK: 'NETWORK',      // Network connectivity issues
+  API: 'API',              // Edge Function/Supabase API errors
+  STORAGE: 'STORAGE',      // File upload/download errors
+  UNKNOWN: 'UNKNOWN',      // Unexpected errors
+} as const;
+
+// Extract the type from the values of our const object
+// This gives us type safety equivalent to an enum
+export type ErrorCategory = typeof ErrorCategory[keyof typeof ErrorCategory];
 
 export interface AppError {
   category: ErrorCategory;
@@ -17,15 +23,29 @@ export interface AppError {
 }
 
 export class FrontendError extends Error {
+  // Explicitly declare class properties (required for erasableSyntaxOnly)
+  category: ErrorCategory;
+  userMessage: string;
+  technicalMessage?: string;
+  retryable: boolean;
+  metadata?: Record<string, any>;
+
   constructor(
-    public category: ErrorCategory,
-    public userMessage: string,
-    public technicalMessage?: string,
-    public retryable: boolean = false,
-    public metadata?: Record<string, any>
+    category: ErrorCategory,
+    userMessage: string,
+    technicalMessage?: string,
+    retryable: boolean = false,
+    metadata?: Record<string, any>
   ) {
     super(technicalMessage || userMessage);
     this.name = 'FrontendError';
+
+    // Manually assign all parameters to properties
+    this.category = category;
+    this.userMessage = userMessage;
+    this.technicalMessage = technicalMessage;
+    this.retryable = retryable;
+    this.metadata = metadata;
   }
 }
 
