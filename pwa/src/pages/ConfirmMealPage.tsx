@@ -117,12 +117,7 @@ export function ConfirmMealPage() {
         throw new Error('Not authenticated. Please log in again.');
       }
 
-      // Get public URL for the photo
-      const { data: urlData } = supabase.storage
-        .from("meal-photos")
-        .getPublicUrl(analysisResult.photoPath);
-
-      // Call save-meal Edge Function
+      // Call save-meal Edge Function (pass storage path, not URL)
       const { error: saveError } = await supabase.functions.invoke(
         "save-meal",
         {
@@ -130,7 +125,7 @@ export function ConfirmMealPage() {
             Authorization: `Bearer ${session.access_token}`,
           },
           body: {
-            photoUrl: urlData.publicUrl,
+            photoPath: analysisResult.photoPath,  // Pass storage path instead of URL
             notes: analysisResult.userContext || undefined,
             foodItems: foods.map((food) => ({
               name: food.name,

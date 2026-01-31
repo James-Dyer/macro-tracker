@@ -18,7 +18,8 @@ export interface Meal {
   id: string;
   user_id: string;
   timestamp: string;
-  photo_url?: string;
+  photo_url?: string;      // Contains signed URLs after fetch (generated from photo_path)
+  photo_path?: string;      // Storage path (used to generate signed URLs)
   notes?: string;
   created_at: string;
   food_items: FoodItem[];
@@ -67,7 +68,27 @@ export function useMeals() {
 
       if (fetchError) throw fetchError;
 
-      setMeals((data as Meal[]) || []);
+      // Generate signed URLs for all meal photos
+      const mealsWithSignedUrls = await Promise.all(
+        (data || []).map(async (meal) => {
+          if (meal.photo_path) {
+            // Generate 1-hour signed URL from storage path
+            const { data: signedData, error: signError } = await supabase.storage
+              .from("meal-photos")
+              .createSignedUrl(meal.photo_path, 3600); // 3600 seconds = 1 hour
+
+            if (!signError && signedData?.signedUrl) {
+              // Store signed URL in photo_url for display (keeps MealCard interface simple)
+              return { ...meal, photo_url: signedData.signedUrl };
+            } else {
+              console.warn(`Failed to generate signed URL for meal ${meal.id}:`, signError);
+            }
+          }
+          return meal;
+        })
+      );
+
+      setMeals(mealsWithSignedUrls as Meal[]);
     } catch (err) {
       console.error("Error fetching meals:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch meals");

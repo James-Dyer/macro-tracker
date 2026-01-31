@@ -27,7 +27,7 @@ interface FoodItemData {
 
 interface SaveMealRequest {
   timestamp?: string; // ISO timestamp, defaults to now
-  photoUrl?: string; // URL from Supabase Storage
+  photoPath?: string; // Storage path (not URL) for the meal photo
   notes?: string;
   foodItems: FoodItemData[];
 }
@@ -108,13 +108,13 @@ serve(async (req) => {
     // Parse request
     const {
       timestamp,
-      photoUrl,
+      photoPath,
       notes,
       foodItems,
     }: SaveMealRequest = await req.json();
 
     logger.info('Saving meal', {
-      hasPhotoUrl: !!photoUrl,
+      hasPhotoPath: !!photoPath,
       hasNotes: !!notes,
       foodItemCount: foodItems?.length || 0
     });
@@ -161,7 +161,7 @@ serve(async (req) => {
       .insert({
         user_id: user.id,
         timestamp: timestamp || new Date().toISOString(),
-        photo_url: photoUrl || null,
+        photo_path: photoPath || null,  // Save storage path (not URL)
         notes: notes || null,
       })
       .select()

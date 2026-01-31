@@ -100,12 +100,12 @@ export function generateMealPhotoFilename(userId: string): string {
 
 /**
  * Upload meal photo to Supabase Storage
- * Returns the storage path on success
+ * Returns the storage path only (signed URLs generated on fetch)
  */
 export async function uploadMealPhoto(
   file: File,
   userId: string
-): Promise<{ path: string; url: string } | { error: string }> {
+): Promise<{ path: string } | { error: string }> {
   try {
     // Generate unique filename
     const filePath = generateMealPhotoFilename(userId);
@@ -123,15 +123,8 @@ export async function uploadMealPhoto(
       return { error: error.message };
     }
 
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from("meal-photos")
-      .getPublicUrl(data.path);
-
-    return {
-      path: data.path,
-      url: urlData.publicUrl,
-    };
+    // Return path only (signed URLs generated on fetch)
+    return { path: data.path };
   } catch (err) {
     console.error("Unexpected upload error:", err);
     return { error: err instanceof Error ? err.message : "Upload failed" };
