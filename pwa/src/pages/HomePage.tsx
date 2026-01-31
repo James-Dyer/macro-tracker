@@ -122,6 +122,7 @@ export function HomePage() {
                 <MealCard
                   timestamp={new Date(meal.timestamp)}
                   photoUrl={meal.photo_url}
+                  thumbnailUrl={meal.thumbnail_url}
                   foodItems={meal.food_items}
                 />
               </div>

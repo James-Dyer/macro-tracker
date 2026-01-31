@@ -18,8 +18,10 @@ export interface Meal {
   id: string;
   user_id: string;
   timestamp: string;
-  photo_url?: string;      // Contains signed URLs after fetch (generated from photo_path)
-  photo_path?: string;      // Storage path (used to generate signed URLs)
+  photo_url?: string;       // Contains signed URL for full image (generated from photo_path)
+  photo_path?: string;      // Storage path for full image
+  thumbnail_url?: string;   // Contains signed URL for thumbnail (generated from thumbnail_path)
+  thumbnail_path?: string;  // Storage path for thumbnail
   notes?: string;
   created_at: string;
   food_items: FoodItem[];
@@ -68,23 +70,31 @@ export function useMeals() {
 
       if (fetchError) throw fetchError;
 
-      // Generate signed URLs for all meal photos
+      // Generate signed URLs for thumbnails only (fallback to full photo for old meals)
       const mealsWithSignedUrls = await Promise.all(
         (data || []).map(async (meal) => {
-          if (meal.photo_path) {
-            // Generate 1-hour signed URL from storage path
-            const { data: signedData, error: signError } = await supabase.storage
-              .from("meal-photos")
-              .createSignedUrl(meal.photo_path, 3600); // 3600 seconds = 1 hour
+          // Prefer thumbnail, fallback to full photo for backward compatibility
+          const pathToSign = meal.thumbnail_path || meal.photo_path;
 
-            if (!signError && signedData?.signedUrl) {
-              // Store signed URL in photo_url for display (keeps MealCard interface simple)
-              return { ...meal, photo_url: signedData.signedUrl };
-            } else {
-              console.warn(`Failed to generate signed URL for meal ${meal.id}:`, signError);
-            }
+          if (!pathToSign) {
+            return meal;
           }
-          return meal;
+
+          const { data: signedData, error: signError } = await supabase.storage
+            .from("meal-photos")
+            .createSignedUrl(pathToSign, 3600); // 3600 seconds = 1 hour
+
+          if (signError || !signedData?.signedUrl) {
+            console.warn(`Failed to generate signed URL for meal ${meal.id}:`, signError);
+            return meal;
+          }
+
+          // Store signed URL in thumbnail_url (MealCard prefers this)
+          return {
+            ...meal,
+            thumbnail_url: signedData.signedUrl,
+            // Don't generate photo_url to save API calls - only needed for detail view
+          };
         })
       );
 

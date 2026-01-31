@@ -25,6 +25,7 @@ interface AnalysisResult {
   scaleWeight?: number;
   confidence: number;
   photoPath: string; // Storage path for the meal photo
+  thumbnailPath: string; // Storage path for the thumbnail
   userContext?: string; // User-provided context from LogMealPage
 }
 
@@ -117,7 +118,7 @@ export function ConfirmMealPage() {
         throw new Error('Not authenticated. Please log in again.');
       }
 
-      // Call save-meal Edge Function (pass storage path, not URL)
+      // Call save-meal Edge Function (pass storage paths, not URLs)
       const { error: saveError } = await supabase.functions.invoke(
         "save-meal",
         {
@@ -125,7 +126,8 @@ export function ConfirmMealPage() {
             Authorization: `Bearer ${session.access_token}`,
           },
           body: {
-            photoPath: analysisResult.photoPath,  // Pass storage path instead of URL
+            photoPath: analysisResult.photoPath,
+            thumbnailPath: analysisResult.thumbnailPath,
             notes: analysisResult.userContext || undefined,
             foodItems: foods.map((food) => ({
               name: food.name,

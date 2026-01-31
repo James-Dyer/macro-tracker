@@ -131,6 +131,7 @@ export function LogMealPage() {
         state: {
           ...data,
           photoPath: uploadResult.path,
+          thumbnailPath: uploadResult.thumbnailPath,
           userContext: userContext.trim(),
         },
       });

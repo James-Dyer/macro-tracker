@@ -117,6 +117,7 @@ export function HistoryPage() {
                         key={meal.id}
                         timestamp={new Date(meal.timestamp)}
                         photoUrl={meal.photo_url}
+                        thumbnailUrl={meal.thumbnail_url}
                         foodItems={meal.food_items}
                       />
                     ))}

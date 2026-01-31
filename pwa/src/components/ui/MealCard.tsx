@@ -18,6 +18,7 @@ interface FoodItem {
 interface MealCardProps {
   timestamp: Date;
   photoUrl?: string;
+  thumbnailUrl?: string;  // Optimized thumbnail (preferred for list views)
   foodItems: FoodItem[];
   onClick?: () => void;
 }
@@ -28,7 +29,7 @@ const macroConfig = {
   fat: { color: '#dc2626', bg: '#fef2f2', label: 'F' },
 };
 
-export function MealCard({ timestamp, photoUrl, foodItems, onClick }: MealCardProps) {
+export function MealCard({ timestamp, photoUrl, thumbnailUrl, foodItems, onClick }: MealCardProps) {
   const totalCalories = foodItems.reduce((sum, item) => sum + item.calories, 0);
   const totalProtein = foodItems.reduce((sum, item) => sum + item.protein, 0);
   const totalCarbs = foodItems.reduce((sum, item) => sum + item.carbs, 0);
@@ -38,6 +39,9 @@ export function MealCard({ timestamp, photoUrl, foodItems, onClick }: MealCardPr
     hour: 'numeric',
     minute: '2-digit',
   });
+
+  // Prefer thumbnail for performance, fallback to full photo
+  const displayUrl = thumbnailUrl || photoUrl;
 
   return (
     <Card
@@ -52,12 +56,14 @@ export function MealCard({ timestamp, photoUrl, foodItems, onClick }: MealCardPr
     >
       <div className="flex gap-3 p-3">
         {/* Photo thumbnail */}
-        {photoUrl ? (
+        {displayUrl ? (
           <div className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-gray-100">
             <img
-              src={photoUrl}
+              src={displayUrl}
               alt="Meal"
               className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
             />
           </div>
         ) : (

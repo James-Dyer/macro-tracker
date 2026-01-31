@@ -99,32 +99,87 @@ export function generateMealPhotoFilename(userId: string): string {
 }
 
 /**
+ * Generate a thumbnail from an image file
+ * Creates a smaller version optimized for list views
+ */
+export async function generateThumbnail(
+  file: File,
+  options: {
+    maxSizeMB?: number;
+    maxWidthOrHeight?: number;
+    quality?: number;
+  } = {}
+): Promise<File> {
+  const imageCompression = (await import("browser-image-compression")).default;
+
+  const thumbnail = await imageCompression(file, {
+    maxSizeMB: 0.1,           // 100KB target for fast loading
+    maxWidthOrHeight: 400,     // 400px covers @2x displays
+    quality: 0.85,
+    useWebWorker: true,
+    ...options,
+  });
+
+  // Create new file with _thumb suffix
+  return new File(
+    [thumbnail],
+    file.name.replace(/(\.[^.]+)$/, '_thumb$1'),
+    { type: file.type }
+  );
+}
+
+/**
  * Upload meal photo to Supabase Storage
- * Returns the storage path only (signed URLs generated on fetch)
+ * Uploads both full-resolution image and optimized thumbnail
+ * Returns storage paths (signed URLs generated on fetch)
  */
 export async function uploadMealPhoto(
   file: File,
   userId: string
-): Promise<{ path: string } | { error: string }> {
+): Promise<{ path: string; thumbnailPath: string } | { error: string }> {
   try {
-    // Generate unique filename
-    const filePath = generateMealPhotoFilename(userId);
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 9);
+    const baseFilename = `${userId}/${timestamp}-${random}`;
 
-    // Upload to storage
-    const { data, error } = await supabase.storage
+    const fullPath = `${baseFilename}.jpg`;
+    const thumbPath = `${baseFilename}_thumb.jpg`;
+
+    // Upload full-resolution image
+    const { data: fullData, error: fullError } = await supabase.storage
       .from("meal-photos")
-      .upload(filePath, file, {
+      .upload(fullPath, file, {
         cacheControl: "3600",
         upsert: false,
       });
 
-    if (error) {
-      console.error("Upload error:", error);
-      return { error: error.message };
+    if (fullError) {
+      console.error("Upload error:", fullError);
+      return { error: fullError.message };
     }
 
-    // Return path only (signed URLs generated on fetch)
-    return { path: data.path };
+    // Generate and upload thumbnail
+    const thumbnail = await generateThumbnail(file);
+    const { data: thumbData, error: thumbError } = await supabase.storage
+      .from("meal-photos")
+      .upload(thumbPath, thumbnail, {
+        cacheControl: "86400", // 24hr cache for thumbnails
+        upsert: false,
+      });
+
+    if (thumbError) {
+      console.warn("Thumbnail upload failed, falling back to full image:", thumbError);
+      // Fallback to full image if thumbnail fails
+      return {
+        path: fullData.path,
+        thumbnailPath: fullData.path,
+      };
+    }
+
+    return {
+      path: fullData.path,
+      thumbnailPath: thumbData.path,
+    };
   } catch (err) {
     console.error("Unexpected upload error:", err);
     return { error: err instanceof Error ? err.message : "Upload failed" };

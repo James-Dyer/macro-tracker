@@ -28,6 +28,7 @@ interface FoodItemData {
 interface SaveMealRequest {
   timestamp?: string; // ISO timestamp, defaults to now
   photoPath?: string; // Storage path (not URL) for the meal photo
+  thumbnailPath?: string; // Storage path for the thumbnail
   notes?: string;
   foodItems: FoodItemData[];
 }
@@ -109,12 +110,14 @@ serve(async (req) => {
     const {
       timestamp,
       photoPath,
+      thumbnailPath,
       notes,
       foodItems,
     }: SaveMealRequest = await req.json();
 
     logger.info('Saving meal', {
       hasPhotoPath: !!photoPath,
+      hasThumbnailPath: !!thumbnailPath,
       hasNotes: !!notes,
       foodItemCount: foodItems?.length || 0
     });
@@ -161,7 +164,8 @@ serve(async (req) => {
       .insert({
         user_id: user.id,
         timestamp: timestamp || new Date().toISOString(),
-        photo_path: photoPath || null,  // Save storage path (not URL)
+        photo_path: photoPath || null,
+        thumbnail_path: thumbnailPath || null,
         notes: notes || null,
       })
       .select()
