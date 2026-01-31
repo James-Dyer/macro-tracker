@@ -10,8 +10,9 @@ interface SwipeableCardProps {
  * SwipeableCard - Horizontal swipe gesture to reveal delete button
  *
  * Gesture pattern:
- * - Swipe left to reveal delete button (40% threshold)
- * - Swipe further (80%+) or tap button to execute delete
+ * - Swipe left to reveal delete button (30% threshold)
+ * - Swipe further (70%+) or tap button to execute delete
+ * - One-swipe delete requires confirmation; two-swipe delete is immediate
  * - Swipe right or tap elsewhere to cancel
  *
  * Only activates horizontal swipe if dx > dy (avoids scroll conflicts)
@@ -25,6 +26,7 @@ export function SwipeableCard({
   const [deleteRevealed, setDeleteRevealed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const startX = useRef(0);
   const startY = useRef(0);
@@ -85,8 +87,8 @@ export function SwipeableCard({
       );
       setSwipeX(newSwipeX);
 
-      // Reveal delete button at 40% threshold
-      const maxSwipe = containerWidth * 0.4;
+      // Reveal delete button at 30% threshold
+      const maxSwipe = containerWidth * 0.3;
       if (newSwipeX > maxSwipe && !deleteRevealed) {
         setDeleteRevealed(true);
         // Haptic feedback if supported
@@ -103,15 +105,26 @@ export function SwipeableCard({
     if (isDeleting || !containerRef.current) return;
 
     const containerWidth = containerRef.current.offsetWidth;
-    const threshold40 = containerWidth * 0.4;
-    const threshold80 = containerWidth * 0.8;
+    const threshold30 = containerWidth * 0.3;
+    const threshold70 = containerWidth * 0.7;
 
-    // Execute delete at 80% threshold
-    if (swipeX > threshold80) {
-      await executeDelete();
-    } else if (swipeX > threshold40) {
-      // Lock at 40% (show delete button)
-      setSwipeX(threshold40);
+    // Execute delete at 70% threshold
+    if (swipeX > threshold70) {
+      // Check if this was a one-swipe delete (requires confirmation) or two-swipe (immediate)
+      const isOneSwipeDelete = swipeXAtTouchStart.current < threshold30;
+
+      if (isOneSwipeDelete) {
+        // Show confirmation modal for one-swipe delete
+        setShowConfirmModal(true);
+        // Lock at 70% while modal is shown
+        setSwipeX(threshold70);
+      } else {
+        // Two-swipe delete - execute immediately (user already revealed button deliberately)
+        await executeDelete();
+      }
+    } else if (swipeX > threshold30) {
+      // Lock at 30% (show delete button)
+      setSwipeX(threshold30);
       setDeleteRevealed(true);
     } else {
       // Reset (cancel)
@@ -139,6 +152,18 @@ export function SwipeableCard({
     await executeDelete();
   };
 
+  const handleConfirmDelete = async () => {
+    setShowConfirmModal(false);
+    await executeDelete();
+  };
+
+  const handleCancelDelete = () => {
+    setShowConfirmModal(false);
+    // Reset to closed state
+    setSwipeX(0);
+    setDeleteRevealed(false);
+  };
+
   return (
     <div
       ref={containerRef}
@@ -156,7 +181,11 @@ export function SwipeableCard({
         onTouchEnd={(e) => e.stopPropagation()}
         role="button"
         aria-label={`${deleteLabel} meal`}
-        style={{ pointerEvents: isDeleting ? 'none' : 'auto' }}
+        style={{
+          pointerEvents: isDeleting ? 'none' : 'auto',
+          width: `${swipeX}px`, // Fill the revealed area
+          transition: isSwiping ? "none" : "width 0.3s ease-out",
+        }}
       >
         <span className="text-white font-semibold text-lg">
           {isDeleting ? "Deleting..." : deleteLabel}
@@ -173,6 +202,38 @@ export function SwipeableCard({
       >
         {children}
       </div>
+
+      {/* Confirmation Modal for one-swipe delete */}
+      {showConfirmModal && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in"
+          onClick={handleCancelDelete}
+        >
+          <div
+            className="bg-white rounded-lg p-6 mx-4 max-w-sm w-full shadow-xl animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold mb-2">Delete this meal?</h3>
+            <p className="text-gray-600 mb-6">
+              This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelDelete}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 active:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
