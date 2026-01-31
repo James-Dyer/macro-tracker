@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../services/supabase";
+import { useAuth } from "../contexts/AuthContext";
 
 export interface DailyGoal {
   id?: string;
@@ -17,6 +18,7 @@ export interface DailyGoal {
  * Hook for managing user's daily macro goals
  */
 export function useGoals() {
+  const { user } = useAuth();
   const [goals, setGoals] = useState<DailyGoal | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,10 +28,6 @@ export function useGoals() {
     try {
       setLoading(true);
       setError(null);
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
 
       if (!user) {
         // Route guard handles this, but be defensive
@@ -85,10 +83,6 @@ export function useGoals() {
   // Update or create goals
   const saveGoals = async (newGoals: Omit<DailyGoal, "id" | "user_id" | "created_at" | "updated_at">) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
       if (!user) {
         // Route guard handles this, but be defensive
         throw new Error("Not authenticated");
@@ -119,10 +113,13 @@ export function useGoals() {
     }
   };
 
-  // Fetch goals on mount
+  // Fetch goals when user is available
   useEffect(() => {
-    fetchGoals();
-  }, []);
+    if (user) {
+      fetchGoals();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   return {
     goals,

@@ -80,7 +80,7 @@ supabase functions deploy save-meal --project-ref aphpvbalvookjladggku
 ### analyze-meal
 - **Purpose**: Analyze food photos using AI vision APIs and return complete nutrition data
 - **Input**: `{ photoPath: string (storage path), useScale?: boolean }`
-- **Output**: `{ foods: [{ name, confidence, weightGrams, calories, protein, carbs, fat, fiber }], scaleDetected: boolean, scaleWeight?: number, confidence: number }`
+- **Output**: `{ foods: [{ name, confidence, weight_g, calories, protein, carbs, fat, fiber }], scaleDetected: boolean, scaleWeight?: number, confidence: number }`
 - **Auth**: Required (JWT verification enabled)
 - **Timeout**: ~3-5 seconds per request
 - **Dependencies**: Gemini Pro Vision API or OpenAI GPT-4V
@@ -88,7 +88,7 @@ supabase functions deploy save-meal --project-ref aphpvbalvookjladggku
 
 ### save-meal
 - **Purpose**: Persist meal and food items to database
-- **Input**: `{ timestamp?, photoUrl?, notes?, foodItems: [{ name, weightGrams, calories, protein, carbs, fat, fiber }] }`
+- **Input**: `{ timestamp?, photoUrl?, notes?, foodItems: [{ name, weight_g, calories, protein, carbs, fat, fiber }] }`
 - **Output**: `{ mealId: string, success: boolean }`
 - **Auth**: Required (JWT verification enabled)
 - **Database**: Inserts to `meal` and `food_item` tables
@@ -118,7 +118,7 @@ curl -X POST \
   -d '{
     "foodItems": [{
       "name": "Grilled Chicken",
-      "weightGrams": 150,
+      "weight_g": 150,
       "calories": 248,
       "protein": 47,
       "carbs": 0,

@@ -17,7 +17,7 @@ function generateRequestId(): string {
 
 interface FoodItemData {
   name: string;
-  weightGrams: number;
+  weight_g: number;
   calories: number;
   protein: number;
   carbs: number;
@@ -131,13 +131,13 @@ serve(async (req) => {
     }
 
     // Validate each food item
-    const invalidItems: Array<{index: number; reason: string}> = [];
+    const invalidItems: Array<{ index: number; reason: string }> = [];
     for (let i = 0; i < foodItems.length; i++) {
       const item = foodItems[i];
       if (!item.name || item.name.trim() === "") {
         invalidItems.push({ index: i, reason: 'Missing name' });
       }
-      if (item.weightGrams <= 0) {
+      if (item.weight_g <= 0) {
         invalidItems.push({ index: i, reason: 'Weight must be positive' });
       }
       if (item.calories < 0) {
@@ -183,7 +183,7 @@ serve(async (req) => {
     const foodItemsToInsert = foodItems.map((item) => ({
       meal_id: meal.id,
       name: item.name.trim(),
-      weight_g: Math.round(item.weightGrams),
+      weight_g: Math.round(item.weight_g),
       calories: Math.round(item.calories),
       protein: Math.round(item.protein * 10) / 10,
       carbs: Math.round(item.carbs * 10) / 10,

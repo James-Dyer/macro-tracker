@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../services/supabase";
+import { useAuth } from "../contexts/AuthContext";
 
 export interface FoodItem {
   id?: string;
@@ -35,6 +36,7 @@ export interface DailyMacros {
  * Hook for managing meals data
  */
 export function useMeals() {
+  const { user } = useAuth();
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,10 +46,6 @@ export function useMeals() {
     try {
       setLoading(true);
       setError(null);
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
 
       if (!user) {
         // Route guard handles this, but be defensive
@@ -78,10 +76,13 @@ export function useMeals() {
     }
   };
 
-  // Fetch meals on mount
+  // Fetch meals when user is available
   useEffect(() => {
-    fetchMeals();
-  }, []);
+    if (user) {
+      fetchMeals();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Get today's meals
   const getTodayMeals = (): Meal[] => {
