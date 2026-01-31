@@ -1,60 +1,76 @@
 import { NavLink } from 'react-router-dom';
 
 /**
- * BottomNav - Redesigned with refined iOS aesthetic
+ * BottomNav - Redesigned with 5 items and centered Log button
  *
  * Features:
- * - Active state with subtle scale + color change
+ * - 5-item layout: Home, History, Log (center), Goals, More
+ * - Center Log button with special styling (green circle)
+ * - Active state with subtle scale + color change for standard items
  * - Backdrop blur for modern iOS feel
- * - Refined icon spacing
  */
 
 interface NavItem {
   to: string;
   label: string;
   icon: React.ComponentType<{ className?: string; isActive: boolean }>;
+  type: 'standard' | 'center-action';
 }
 
 const navItems: NavItem[] = [
-  { to: '/', label: 'Today', icon: HomeIcon },
-  { to: '/log', label: 'Log', icon: CameraIcon },
-  { to: '/history', label: 'History', icon: HistoryIcon },
-  { to: '/settings', label: 'Settings', icon: SettingsIcon },
+  { to: '/', label: 'Home', icon: HomeIcon, type: 'standard' },
+  { to: '/history', label: 'History', icon: HistoryIcon, type: 'standard' },
+  { to: '/log', label: 'Log', icon: CameraIcon, type: 'center-action' },
+  { to: '/goals', label: 'Goals', icon: GoalsIcon, type: 'standard' },
+  { to: '/settings', label: 'More', icon: MoreIcon, type: 'standard' },
 ];
 
 export function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-200/60 safe-area-pb z-50">
       <div className="flex items-center h-16 max-w-2xl mx-auto">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              `flex-1 flex flex-col items-center justify-center gap-1 h-full transition-all duration-200 ${
-                isActive ? 'scale-105' : 'scale-100 active:scale-95'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <item.icon
-                  className={`w-6 h-6 transition-colors ${
-                    isActive ? 'text-primary' : 'text-gray-400'
-                  }`}
-                  isActive={isActive}
-                />
-                <span
-                  className={`text-xs font-medium transition-colors ${
-                    isActive ? 'text-primary' : 'text-gray-500'
-                  }`}
-                >
-                  {item.label}
-                </span>
-              </>
-            )}
-          </NavLink>
-        ))}
+        {navItems.map((item) => {
+          if (item.type === 'center-action') {
+            return (
+              <NavLink key={item.to} to={item.to} className="flex-1 flex justify-center">
+                <div className="w-14 h-14 rounded-full bg-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform">
+                  <item.icon className="w-7 h-7 text-white" isActive={false} />
+                </div>
+              </NavLink>
+            );
+          }
+
+          // Standard nav item
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `flex-1 flex flex-col items-center justify-center gap-1 h-full transition-all duration-200 ${
+                  isActive ? 'scale-105' : 'scale-100 active:scale-95'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <item.icon
+                    className={`w-6 h-6 transition-colors ${
+                      isActive ? 'text-primary' : 'text-gray-400'
+                    }`}
+                    isActive={isActive}
+                  />
+                  <span
+                    className={`text-xs font-medium transition-colors ${
+                      isActive ? 'text-primary' : 'text-gray-500'
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                </>
+              )}
+            </NavLink>
+          );
+        })}
       </div>
     </nav>
   );
@@ -100,16 +116,22 @@ function HistoryIcon({ className, isActive }: { className?: string; isActive: bo
   );
 }
 
-function SettingsIcon({ className, isActive }: { className?: string; isActive: boolean }) {
+function GoalsIcon({ className, isActive }: { className?: string; isActive: boolean }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={isActive ? 2.5 : 2}
-        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-      />
-      <circle cx="12" cy="12" r="3" strokeWidth={isActive ? 2.5 : 2} />
+      <circle cx="12" cy="12" r="9" strokeLinecap="round" strokeLinejoin="round" strokeWidth={isActive ? 2.5 : 2} />
+      <circle cx="12" cy="12" r="5" strokeLinecap="round" strokeLinejoin="round" strokeWidth={isActive ? 2.5 : 2} />
+      <circle cx="12" cy="12" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function MoreIcon({ className }: { className?: string; isActive: boolean }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <circle cx="5" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="19" cy="12" r="1.5" fill="currentColor" />
     </svg>
   );
 }

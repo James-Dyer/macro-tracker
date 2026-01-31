@@ -92,9 +92,12 @@ export function HomePage() {
 
         {todayMeals.length === 0 ? (
           <div className="text-center py-12 animate-fade-in">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+            <button
+              onClick={() => navigate('/log')}
+              className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors active:scale-95"
+            >
               <svg
-                className="w-8 h-8 text-gray-300"
+                className="w-8 h-8 text-primary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -102,16 +105,16 @@ export function HomePage() {
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={1.5}
+                  strokeWidth={2}
                   d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                 />
               </svg>
-            </div>
+            </button>
             <Typography variant="body" color="tertiary">
               No meals logged yet today
             </Typography>
             <Typography variant="bodySmall" color="tertiary" className="mt-1">
-              Tap the camera icon below to start
+              Tap the plus to log your first meal
             </Typography>
           </div>
         ) : (

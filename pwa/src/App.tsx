@@ -7,6 +7,7 @@ import { HomePage } from './pages/HomePage';
 import { LogMealPage } from './pages/LogMealPage';
 import { ConfirmMealPage } from './pages/ConfirmMealPage';
 import { HistoryPage } from './pages/HistoryPage';
+import { GoalsPage } from './pages/GoalsPage';
 import { SettingsPage } from './pages/SettingsPage';
 
 /**
@@ -21,7 +22,8 @@ import { SettingsPage } from './pages/SettingsPage';
  * - /confirm : ConfirmMealPage (review AI results - new meal)
  * - /confirm/:mealId : ConfirmMealPage (edit existing meal)
  * - /history : HistoryPage (past meals)
- * - /settings : SettingsPage (goals, account)
+ * - /goals : GoalsPage (daily macro goals)
+ * - /settings : SettingsPage (account management)
  */
 
 function App() {
@@ -39,6 +41,7 @@ function App() {
               <Route path="/log" element={<LogMealPage />} />
               <Route path="/confirm/:mealId?" element={<ConfirmMealPage />} />
               <Route path="/history" element={<HistoryPage />} />
+              <Route path="/goals" element={<GoalsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Typography, Button, Card } from '../components/ui';
 import { supabase } from '../services/supabase';
@@ -10,6 +10,7 @@ import { parseSupabaseFunctionError } from '../utils/errors';
  * LogMealPage - Photo capture with refined UI
  *
  * Emphasizes the camera action with clean visual hierarchy
+ * Auto-opens camera on mount for seamless experience
  */
 
 export function LogMealPage() {
@@ -20,8 +21,31 @@ export function LogMealPage() {
   const [userContext, setUserContext] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const analyzeRunId = useRef(0);
+  const hasAutoOpened = useRef(false);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showCameraPrompt, setShowCameraPrompt] = useState(false);
+
+  // Auto-trigger camera on mount
+  useEffect(() => {
+    // Auto-trigger camera on mount if no image selected
+    if (!selectedImage && !hasAutoOpened.current) {
+      hasAutoOpened.current = true;
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        fileInputRef.current?.click();
+      }, 100);
+
+      // If user doesn't select a photo within 3 seconds, show the manual trigger button
+      const fallbackTimer = setTimeout(() => {
+        if (!selectedImage) {
+          setShowCameraPrompt(true);
+        }
+      }, 3000);
+
+      return () => clearTimeout(fallbackTimer);
+    }
+  }, [selectedImage]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -50,6 +74,7 @@ export function LogMealPage() {
     setError(null);
     setUserContext('');
     setSelectedFile(null);
+    setShowCameraPrompt(false);
     if (selectedImage) {
       URL.revokeObjectURL(selectedImage);
     }
@@ -57,6 +82,14 @@ export function LogMealPage() {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    // Re-trigger camera
+    hasAutoOpened.current = false;
+    setTimeout(() => {
+      if (!hasAutoOpened.current) {
+        hasAutoOpened.current = true;
+        fileInputRef.current?.click();
+      }
+    }, 100);
   };
 
   const handleAnalyze = () => {
@@ -161,70 +194,91 @@ export function LogMealPage() {
         </Typography>
       </div>
 
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+
       <div className="px-5 py-5">
         {!selectedImage ? (
-          /* Camera Prompt */
-          <div className="animate-scale-in">
-            <Card padding="none" variant="elevated" className="overflow-hidden">
-              {/* Large camera area */}
-              <div className="aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center border-b border-gray-200">
-                <div className="text-center">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white shadow-md flex items-center justify-center">
-                    <CameraIcon className="w-10 h-10 text-gray-400" />
-                  </div>
-                  <Typography variant="body" color="secondary" className="font-medium">
-                    Ready to scan
-                  </Typography>
+          /* Opening Camera State or Fallback */
+          <div className="animate-fade-in">
+            {!showCameraPrompt ? (
+              /* Opening camera... */
+              <div className="text-center py-20">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                  <CameraIcon className="w-8 h-8 text-primary animate-pulse" />
                 </div>
-              </div>
-
-              {/* Hidden file input */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-
-              {/* Action area */}
-              <div className="p-5">
+                <Typography variant="body" color="secondary" className="font-medium">
+                  Opening camera...
+                </Typography>
+                <Typography variant="bodySmall" color="tertiary" className="mt-2">
+                  If camera doesn't open, tap below
+                </Typography>
                 <Button
-                  title="Open Camera"
+                  title="Open Camera Manually"
+                  variant="secondary"
                   onClick={handleTakePhoto}
-                  size="lg"
-                  fullWidth
-                  className="mb-4"
+                  size="md"
+                  className="mt-4 mx-auto"
                 />
-
-                <Card variant="filled" padding="md">
-                  <Typography variant="label" className="mb-2 text-gray-700">
-                    Tips for best results:
-                  </Typography>
-                  <ul className="space-y-1.5">
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">•</span>
-                      <Typography variant="bodySmall" color="secondary">
-                        Place food on scale with display visible
-                      </Typography>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">•</span>
-                      <Typography variant="bodySmall" color="secondary">
-                        Use good lighting for accuracy
-                      </Typography>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">•</span>
-                      <Typography variant="bodySmall" color="secondary">
-                        Include all items in frame
-                      </Typography>
-                    </li>
-                  </ul>
-                </Card>
               </div>
-            </Card>
+            ) : (
+              /* Fallback: Manual camera trigger */
+              <Card padding="none" variant="elevated" className="overflow-hidden">
+                <div className="aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center border-b border-gray-200">
+                  <div className="text-center">
+                    <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white shadow-md flex items-center justify-center">
+                      <CameraIcon className="w-10 h-10 text-gray-400" />
+                    </div>
+                    <Typography variant="body" color="secondary" className="font-medium">
+                      Ready to scan
+                    </Typography>
+                  </div>
+                </div>
+
+                <div className="p-5">
+                  <Button
+                    title="Open Camera"
+                    onClick={handleTakePhoto}
+                    size="lg"
+                    fullWidth
+                    className="mb-4"
+                  />
+
+                  <Card variant="filled" padding="md">
+                    <Typography variant="label" className="mb-2 text-gray-700">
+                      Tips for best results:
+                    </Typography>
+                    <ul className="space-y-1.5">
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">•</span>
+                        <Typography variant="bodySmall" color="secondary">
+                          Place food on scale with display visible
+                        </Typography>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">•</span>
+                        <Typography variant="bodySmall" color="secondary">
+                          Use good lighting for accuracy
+                        </Typography>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">•</span>
+                        <Typography variant="bodySmall" color="secondary">
+                          Include all items in frame
+                        </Typography>
+                      </li>
+                    </ul>
+                  </Card>
+                </div>
+              </Card>
+            )}
           </div>
         ) : (
           /* Photo Preview */
