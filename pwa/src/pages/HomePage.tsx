@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Typography, MacroSummary, MealCard, Card, SwipeableCard } from '../components/ui';
 import { useMeals } from '../hooks/useMeals';
@@ -11,6 +12,7 @@ import { useGoals } from '../hooks/useGoals';
 
 export function HomePage() {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { loading: mealsLoading, error: mealsError, getTodayMeals, calculateDailyTotals, deleteMeal } = useMeals();
   const { goals, loading: goalsLoading } = useGoals();
 
@@ -30,6 +32,20 @@ export function HomePage() {
   };
 
   const loading = mealsLoading || goalsLoading;
+
+  const handleCameraClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Navigate to LogMealPage with the selected file
+      navigate('/log', {
+        state: { selectedFile: file }
+      });
+    }
+  };
 
   // Loading state
   if (loading) {
@@ -60,6 +76,16 @@ export function HomePage() {
 
   return (
     <div className="pb-24 min-h-screen">
+      {/* Hidden file input for camera */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+
       {/* Header */}
       <div className="px-5 pt-4 pb-3 bg-white/80 backdrop-blur-sm border-b border-gray-200/60 sticky top-0 z-10 animate-fade-in">
         <Typography variant="h2" className="text-gray-900">
@@ -93,7 +119,7 @@ export function HomePage() {
         {todayMeals.length === 0 ? (
           <div className="text-center py-12 animate-fade-in">
             <button
-              onClick={() => navigate('/log')}
+              onClick={handleCameraClick}
               className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors active:scale-95"
             >
               <svg

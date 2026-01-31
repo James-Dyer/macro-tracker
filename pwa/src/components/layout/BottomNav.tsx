@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom';
+import { useRef } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 
 /**
  * BottomNav - Redesigned with 5 items and centered Log button
@@ -26,17 +27,42 @@ const navItems: NavItem[] = [
 ];
 
 export function BottomNav() {
+  const navigate = useNavigate();
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCameraSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      navigate('/log', {
+        state: { selectedFile: file }
+      });
+    }
+  };
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-200/60 safe-area-pb z-50">
+      {/* Hidden file input for camera button */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleCameraSelect}
+        className="hidden"
+      />
+
       <div className="flex items-center h-16 max-w-2xl mx-auto">
         {navItems.map((item) => {
           if (item.type === 'center-action') {
             return (
-              <NavLink key={item.to} to={item.to} className="flex-1 flex justify-center">
-                <div className="w-14 h-14 rounded-full bg-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform">
+              <div key={item.to} className="flex-1 flex justify-center">
+                <button
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="w-14 h-14 rounded-full bg-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+                >
                   <item.icon className="w-7 h-7 text-white" isActive={false} />
-                </div>
-              </NavLink>
+                </button>
+              </div>
             );
           }
 
