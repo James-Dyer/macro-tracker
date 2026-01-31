@@ -1,4 +1,4 @@
-import { useState, useRef, type TouchEvent, type ReactNode } from "react";
+import { useState, useRef, useEffect, type TouchEvent, type ReactNode } from "react";
 
 interface SwipeableCardProps {
   onDelete: () => Promise<void>;
@@ -29,12 +29,36 @@ export function SwipeableCard({
   const startX = useRef(0);
   const startY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const swipeXAtTouchStart = useRef(0); // Track card position when touch starts
+
+  // Close delete button when clicking outside card
+  useEffect(() => {
+    if (!deleteRevealed || isDeleting) return;
+
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setSwipeX(0);
+        setDeleteRevealed(false);
+      }
+    };
+
+    // Delay to avoid immediately closing when reveal happens
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleOutsideClick);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', handleOutsideClick);
+    };
+  }, [deleteRevealed, isDeleting]);
 
   const handleTouchStart = (e: TouchEvent) => {
     if (isDeleting) return;
 
     startX.current = e.touches[0].clientX;
     startY.current = e.touches[0].clientY;
+    swipeXAtTouchStart.current = swipeX; // Capture baseline position
     setIsSwiping(false);
   };
 
@@ -53,13 +77,16 @@ export function SwipeableCard({
 
     if (isSwiping) {
       const containerWidth = containerRef.current.offsetWidth;
-      const maxSwipe = containerWidth * 0.4; // Cap at 40% when locked
 
-      // Only allow left swipe (dx > 0), cap at container width
-      const newSwipeX = Math.max(0, Math.min(dx, containerWidth));
+      // Add delta to baseline position from touch start
+      const newSwipeX = Math.max(
+        0,
+        Math.min(swipeXAtTouchStart.current + dx, containerWidth)
+      );
       setSwipeX(newSwipeX);
 
       // Reveal delete button at 40% threshold
+      const maxSwipe = containerWidth * 0.4;
       if (newSwipeX > maxSwipe && !deleteRevealed) {
         setDeleteRevealed(true);
         // Haptic feedback if supported
@@ -112,11 +139,6 @@ export function SwipeableCard({
     await executeDelete();
   };
 
-  const handleCancelClick = () => {
-    setSwipeX(0);
-    setDeleteRevealed(false);
-  };
-
   return (
     <div
       ref={containerRef}
@@ -125,16 +147,20 @@ export function SwipeableCard({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Red delete background (absolute, right-0) */}
-      <div className="absolute inset-y-0 right-0 flex items-center justify-end bg-red-500 px-5">
-        <button
-          onClick={handleDeleteClick}
-          disabled={isDeleting}
-          className="min-w-[88px] min-h-[44px] px-4 py-2 text-white font-medium rounded-lg bg-red-600 hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50"
-          aria-label={`${deleteLabel} meal`}
-        >
+      {/* Red delete background - unified clickable target */}
+      <div
+        onClick={handleDeleteClick}
+        className="absolute inset-y-0 right-0 flex items-center justify-center bg-red-500 px-5 cursor-pointer active:bg-red-600 transition-colors select-none"
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+        role="button"
+        aria-label={`${deleteLabel} meal`}
+        style={{ pointerEvents: isDeleting ? 'none' : 'auto' }}
+      >
+        <span className="text-white font-semibold text-lg">
           {isDeleting ? "Deleting..." : deleteLabel}
-        </button>
+        </span>
       </div>
 
       {/* Card content (transforms based on swipeX) */}
@@ -147,15 +173,6 @@ export function SwipeableCard({
       >
         {children}
       </div>
-
-      {/* Cancel overlay when delete revealed */}
-      {deleteRevealed && !isDeleting && (
-        <div
-          onClick={handleCancelClick}
-          className="absolute inset-0 bg-transparent z-10 cursor-pointer"
-          aria-label="Cancel delete"
-        />
-      )}
     </div>
   );
 }
