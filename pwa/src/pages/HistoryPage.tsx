@@ -1,4 +1,5 @@
-import { Typography, MealCard, Card } from '../components/ui';
+import { useNavigate } from 'react-router-dom';
+import { Typography, MealCard, Card, SwipeableCard } from '../components/ui';
 import { useMeals } from '../hooks/useMeals';
 import type { Meal } from '../hooks/useMeals';
 
@@ -7,7 +8,8 @@ import type { Meal } from '../hooks/useMeals';
  */
 
 export function HistoryPage() {
-  const { meals, loading, error, calculateDailyTotals } = useMeals();
+  const navigate = useNavigate();
+  const { meals, loading, error, calculateDailyTotals, deleteMeal } = useMeals();
 
   // Group meals by date
   const mealsByDate = meals.reduce((groups, meal) => {
@@ -113,13 +115,24 @@ export function HistoryPage() {
                   {/* Meals */}
                   <div className="space-y-3">
                     {mealsForDate.map((meal) => (
-                      <MealCard
+                      <SwipeableCard
                         key={meal.id}
-                        timestamp={new Date(meal.timestamp)}
-                        photoUrl={meal.photo_url}
-                        thumbnailUrl={meal.thumbnail_url}
-                        foodItems={meal.food_items}
-                      />
+                        onDelete={async () => {
+                          await deleteMeal(meal.id);
+                        }}
+                      >
+                        <MealCard
+                          timestamp={new Date(meal.timestamp)}
+                          photoUrl={meal.photo_url}
+                          thumbnailUrl={meal.thumbnail_url}
+                          foodItems={meal.food_items}
+                          onClick={() => {
+                            navigate(`/confirm/${meal.id}`, {
+                              state: { mode: 'edit', meal },
+                            });
+                          }}
+                        />
+                      </SwipeableCard>
                     ))}
                   </div>
                 </div>

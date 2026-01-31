@@ -144,8 +144,12 @@ export function useMeals() {
     );
   };
 
-  // Delete a meal
+  // Delete a meal (optimistic UI)
   const deleteMeal = async (mealId: string) => {
+    // Optimistically remove from local state
+    const previousMeals = [...meals];
+    setMeals(meals.filter((m) => m.id !== mealId));
+
     try {
       const { error: deleteError } = await supabase
         .from("meal")
@@ -153,11 +157,94 @@ export function useMeals() {
         .eq("id", mealId);
 
       if (deleteError) throw deleteError;
-
-      // Update local state
-      setMeals(meals.filter((m) => m.id !== mealId));
     } catch (err) {
       console.error("Error deleting meal:", err);
+      // Revert optimistic update on error
+      setMeals(previousMeals);
+      throw err;
+    }
+  };
+
+  // Update a meal (edit functionality)
+  const updateMeal = async (
+    mealId: string,
+    updates: { notes?: string },
+    foodItems: FoodItem[]
+  ) => {
+    try {
+      // 1. Update meal row (notes only - timestamp/photos are locked)
+      if (updates.notes !== undefined) {
+        const { error: updateError } = await supabase
+          .from("meal")
+          .update({ notes: updates.notes })
+          .eq("id", mealId);
+
+        if (updateError) throw updateError;
+      }
+
+      // 2. Get existing food_items for comparison
+      const { data: existingItems, error: fetchError } = await supabase
+        .from("food_item")
+        .select("id")
+        .eq("meal_id", mealId);
+
+      if (fetchError) throw fetchError;
+
+      const existingIds = new Set((existingItems || []).map((item) => item.id));
+      const newIds = new Set(foodItems.filter((item) => item.id).map((item) => item.id));
+
+      // 3. Delete removed items (IDs not in new list)
+      const idsToDelete = [...existingIds].filter((id) => !newIds.has(id));
+      if (idsToDelete.length > 0) {
+        const { error: deleteError } = await supabase
+          .from("food_item")
+          .delete()
+          .in("id", idsToDelete);
+
+        if (deleteError) throw deleteError;
+      }
+
+      // 4. Update existing items and insert new items
+      for (const item of foodItems) {
+        if (item.id) {
+          // Update existing item
+          const { error: updateError } = await supabase
+            .from("food_item")
+            .update({
+              name: item.name,
+              weight_g: item.weight_g,
+              calories: item.calories,
+              protein: item.protein,
+              carbs: item.carbs,
+              fat: item.fat,
+              fiber: item.fiber,
+            })
+            .eq("id", item.id);
+
+          if (updateError) throw updateError;
+        } else {
+          // Insert new item
+          const { error: insertError } = await supabase
+            .from("food_item")
+            .insert({
+              meal_id: mealId,
+              name: item.name,
+              weight_g: item.weight_g,
+              calories: item.calories,
+              protein: item.protein,
+              carbs: item.carbs,
+              fat: item.fat,
+              fiber: item.fiber,
+            });
+
+          if (insertError) throw insertError;
+        }
+      }
+
+      // 5. Refetch meals to get fresh data
+      await fetchMeals();
+    } catch (err) {
+      console.error("Error updating meal:", err);
       throw err;
     }
   };
@@ -170,5 +257,6 @@ export function useMeals() {
     getTodayMeals,
     calculateDailyTotals,
     deleteMeal,
+    updateMeal,
   };
 }

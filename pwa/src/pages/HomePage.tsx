@@ -1,4 +1,5 @@
-import { Typography, MacroSummary, MealCard, Card } from '../components/ui';
+import { useNavigate } from 'react-router-dom';
+import { Typography, MacroSummary, MealCard, Card, SwipeableCard } from '../components/ui';
 import { useMeals } from '../hooks/useMeals';
 import { useGoals } from '../hooks/useGoals';
 
@@ -9,7 +10,8 @@ import { useGoals } from '../hooks/useGoals';
  */
 
 export function HomePage() {
-  const { loading: mealsLoading, error: mealsError, getTodayMeals, calculateDailyTotals } = useMeals();
+  const navigate = useNavigate();
+  const { loading: mealsLoading, error: mealsError, getTodayMeals, calculateDailyTotals, deleteMeal } = useMeals();
   const { goals, loading: goalsLoading } = useGoals();
 
   // Get today's meals
@@ -119,12 +121,23 @@ export function HomePage() {
                 key={meal.id}
                 className={`animate-slide-up stagger-${Math.min(index + 2, 4)}`}
               >
-                <MealCard
-                  timestamp={new Date(meal.timestamp)}
-                  photoUrl={meal.photo_url}
-                  thumbnailUrl={meal.thumbnail_url}
-                  foodItems={meal.food_items}
-                />
+                <SwipeableCard
+                  onDelete={async () => {
+                    await deleteMeal(meal.id);
+                  }}
+                >
+                  <MealCard
+                    timestamp={new Date(meal.timestamp)}
+                    photoUrl={meal.photo_url}
+                    thumbnailUrl={meal.thumbnail_url}
+                    foodItems={meal.food_items}
+                    onClick={() => {
+                      navigate(`/confirm/${meal.id}`, {
+                        state: { mode: 'edit', meal },
+                      });
+                    }}
+                  />
+                </SwipeableCard>
               </div>
             ))}
           </div>

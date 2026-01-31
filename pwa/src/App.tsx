@@ -18,7 +18,8 @@ import { SettingsPage } from './pages/SettingsPage';
  * Protected routes (require auth):
  * - / : HomePage (daily summary)
  * - /log : LogMealPage (camera/photo capture)
- * - /confirm : ConfirmMealPage (review AI results)
+ * - /confirm : ConfirmMealPage (review AI results - new meal)
+ * - /confirm/:mealId : ConfirmMealPage (edit existing meal)
  * - /history : HistoryPage (past meals)
  * - /settings : SettingsPage (goals, account)
  */
@@ -36,7 +37,7 @@ function App() {
             <Route element={<AppLayout />}>
               <Route path="/" element={<HomePage />} />
               <Route path="/log" element={<LogMealPage />} />
-              <Route path="/confirm" element={<ConfirmMealPage />} />
+              <Route path="/confirm/:mealId?" element={<ConfirmMealPage />} />
               <Route path="/history" element={<HistoryPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>

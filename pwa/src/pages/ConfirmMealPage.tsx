@@ -1,12 +1,14 @@
-import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { Typography, Button, Card } from "../components/ui";
 import { supabase } from "../services/supabase";
+import { useMeals, type FoodItem } from "../hooks/useMeals";
 
 /**
  * DetectedFood interface matches the AI response from analyze-meal Edge Function
  */
 interface DetectedFood {
+  id?: string; // Added for edit mode
   name: string;
   weight_g: number;
   calories: number;
@@ -32,23 +34,47 @@ interface AnalysisResult {
 /**
  * ConfirmMealPage - Review and edit AI-detected foods before saving
  *
- * This page receives the analysis results from LogMealPage via router state.
- * Users can edit food names, weights, and macros before saving to the database.
+ * Supports two modes:
+ * 1. New meal mode: Receives analysis results from LogMealPage via router state
+ * 2. Edit mode: Uses mealId param to load existing meal data
  */
 export function ConfirmMealPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const analysisResult = location.state as AnalysisResult | undefined;
+  const { mealId } = useParams<{ mealId?: string }>();
+  const { updateMeal } = useMeals();
 
-  const [foods, setFoods] = useState<DetectedFood[]>(
-    analysisResult?.foods || []
-  );
+  // Detect mode based on URL param
+  const mode = mealId ? "edit" : "new";
+  const analysisResult = location.state as AnalysisResult | undefined;
+  const editMeal = mode === "edit" ? location.state?.meal : undefined;
+
+  const [foods, setFoods] = useState<DetectedFood[]>([]);
+  const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // If no analysis result, redirect back to log page
-  if (!analysisResult) {
+  // Initialize foods from either analysis result or existing meal
+  useEffect(() => {
+    if (mode === "edit" && editMeal) {
+      // Pre-populate from existing meal
+      setFoods(editMeal.food_items || []);
+      setNotes(editMeal.notes || "");
+    } else if (analysisResult) {
+      // New meal from AI analysis
+      setFoods(analysisResult.foods || []);
+      setNotes(analysisResult.userContext || "");
+    }
+  }, [mode, editMeal, analysisResult]);
+
+  // Redirect if invalid state
+  if (mode === "new" && !analysisResult) {
     navigate("/log", { replace: true });
+    return null;
+  }
+
+  if (mode === "edit" && !editMeal) {
+    navigate("/", { replace: true });
     return null;
   }
 
@@ -112,37 +138,45 @@ export function ConfirmMealPage() {
     setError(null);
 
     try {
-      // Get session for auth header
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Not authenticated. Please log in again.');
-      }
-
-      // Call save-meal Edge Function (pass storage paths, not URLs)
-      const { error: saveError } = await supabase.functions.invoke(
-        "save-meal",
-        {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: {
-            photoPath: analysisResult.photoPath,
-            thumbnailPath: analysisResult.thumbnailPath,
-            notes: analysisResult.userContext || undefined,
-            foodItems: foods.map((food) => ({
-              name: food.name,
-              weight_g: food.weight_g,
-              calories: food.calories,
-              protein: food.protein,
-              carbs: food.carbs,
-              fat: food.fat,
-              fiber: food.fiber,
-            })),
-          },
+      if (mode === "edit" && mealId) {
+        // Update existing meal
+        await updateMeal(
+          mealId,
+          { notes: notes || undefined },
+          foods as FoodItem[]
+        );
+      } else {
+        // Create new meal via Edge Function
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error('Not authenticated. Please log in again.');
         }
-      );
 
-      if (saveError) throw saveError;
+        const { error: saveError } = await supabase.functions.invoke(
+          "save-meal",
+          {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: {
+              photoPath: analysisResult!.photoPath,
+              thumbnailPath: analysisResult!.thumbnailPath,
+              notes: notes || undefined,
+              foodItems: foods.map((food) => ({
+                name: food.name,
+                weight_g: food.weight_g,
+                calories: food.calories,
+                protein: food.protein,
+                carbs: food.carbs,
+                fat: food.fat,
+                fiber: food.fiber,
+              })),
+            },
+          }
+        );
+
+        if (saveError) throw saveError;
+      }
 
       // Navigate to home page on success
       navigate("/", { replace: true });
@@ -161,28 +195,32 @@ export function ConfirmMealPage() {
       {/* Header */}
       <div className="px-5 pt-4 pb-3 bg-white/80 backdrop-blur-sm border-b border-gray-200/60 sticky top-0 z-10">
         <Typography variant="h2" className="text-gray-900">
-          Confirm Meal
+          {mode === "edit" ? "Edit Meal" : "Confirm Meal"}
         </Typography>
         <Typography variant="bodySmall" color="secondary" className="mt-0.5">
-          Review and adjust detected foods
+          {mode === "edit"
+            ? "Update food items and notes"
+            : "Review and adjust detected foods"}
         </Typography>
       </div>
 
       <div className="px-5 py-5 space-y-4">
-        {/* User Context */}
-        {analysisResult.userContext && (
-          <Card variant="filled" padding="md">
-            <Typography variant="label" className="text-gray-700 mb-1">
-              Your Notes
-            </Typography>
-            <Typography variant="body" color="secondary">
-              {analysisResult.userContext}
-            </Typography>
-          </Card>
-        )}
+        {/* Notes Field (always editable) */}
+        <div>
+          <Typography variant="label" className="text-gray-700 mb-1">
+            Notes (optional)
+          </Typography>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+            placeholder="Add notes about this meal..."
+            rows={2}
+          />
+        </div>
 
-        {/* Scale Detection Info */}
-        {analysisResult.scaleDetected && (
+        {/* Scale Detection Info (only for new meals) */}
+        {mode === "new" && analysisResult?.scaleDetected && (
           <Card variant="filled" padding="md">
             <div className="flex items-center gap-2">
               <ScaleIcon className="w-5 h-5 text-green-600" />
@@ -193,23 +231,25 @@ export function ConfirmMealPage() {
           </Card>
         )}
 
-        {/* Confidence Score */}
-        <Card variant="filled" padding="md">
-          <Typography variant="label" className="text-gray-700 mb-1">
-            Overall Confidence
-          </Typography>
-          <div className="flex items-center gap-3">
-            <div className="flex-1 bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-primary rounded-full h-2 transition-all"
-                style={{ width: `${analysisResult.confidence * 100}%` }}
-              />
-            </div>
-            <Typography variant="bodySmall" className="font-semibold text-gray-900">
-              {Math.round(analysisResult.confidence * 100)}%
+        {/* Confidence Score (only for new meals) */}
+        {mode === "new" && analysisResult && (
+          <Card variant="filled" padding="md">
+            <Typography variant="label" className="text-gray-700 mb-1">
+              Overall Confidence
             </Typography>
-          </div>
-        </Card>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-primary rounded-full h-2 transition-all"
+                  style={{ width: `${analysisResult.confidence * 100}%` }}
+                />
+              </div>
+              <Typography variant="bodySmall" className="font-semibold text-gray-900">
+                {Math.round(analysisResult.confidence * 100)}%
+              </Typography>
+            </div>
+          </Card>
+        )}
 
         {/* Food Items */}
         <div className="space-y-3">
