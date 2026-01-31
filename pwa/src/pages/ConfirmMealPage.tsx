@@ -8,8 +8,7 @@ import { supabase } from "../services/supabase";
  */
 interface DetectedFood {
   name: string;
-  confidence: number;
-  weightGrams: number;
+  weight_g: number;
   calories: number;
   protein: number;
   carbs: number;
@@ -26,6 +25,7 @@ interface AnalysisResult {
   scaleWeight?: number;
   confidence: number;
   photoPath: string; // Storage path for the meal photo
+  userContext?: string; // User-provided context from LogMealPage
 }
 
 /**
@@ -69,8 +69,7 @@ export function ConfirmMealPage() {
       ...foods,
       {
         name: "",
-        confidence: 1.0,
-        weightGrams: 0,
+        weight_g: 0,
         calories: 0,
         protein: 0,
         carbs: 0,
@@ -101,7 +100,7 @@ export function ConfirmMealPage() {
 
     // Validate all foods have required data
     const invalidFood = foods.find(
-      (f) => !f.name.trim() || f.weightGrams <= 0
+      (f) => !f.name.trim() || f.weight_g <= 0
     );
     if (invalidFood) {
       setError("All foods must have a name and weight");
@@ -132,9 +131,10 @@ export function ConfirmMealPage() {
           },
           body: {
             photoUrl: urlData.publicUrl,
+            notes: analysisResult.userContext || undefined,
             foodItems: foods.map((food) => ({
               name: food.name,
-              weightGrams: food.weightGrams,
+              weight_g: food.weight_g,
               calories: food.calories,
               protein: food.protein,
               carbs: food.carbs,
@@ -172,6 +172,18 @@ export function ConfirmMealPage() {
       </div>
 
       <div className="px-5 py-5 space-y-4">
+        {/* User Context */}
+        {analysisResult.userContext && (
+          <Card variant="filled" padding="md">
+            <Typography variant="label" className="text-gray-700 mb-1">
+              Your Notes
+            </Typography>
+            <Typography variant="body" color="secondary">
+              {analysisResult.userContext}
+            </Typography>
+          </Card>
+        )}
+
         {/* Scale Detection Info */}
         {analysisResult.scaleDetected && (
           <Card variant="filled" padding="md">
@@ -235,9 +247,9 @@ export function ConfirmMealPage() {
                   </Typography>
                   <input
                     type="number"
-                    value={food.weightGrams}
+                    value={food.weight_g}
                     onChange={(e) =>
-                      handleUpdateFood(index, "weightGrams", e.target.value)
+                      handleUpdateFood(index, "weight_g", e.target.value)
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     placeholder="0"
@@ -316,25 +328,6 @@ export function ConfirmMealPage() {
                       placeholder="0"
                     />
                   </div>
-                </div>
-
-                {/* Confidence indicator */}
-                <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
-                  <Typography variant="bodySmall" color="secondary">
-                    AI Confidence:
-                  </Typography>
-                  <Typography
-                    variant="bodySmall"
-                    className={
-                      food.confidence > 0.8
-                        ? "text-green-600 font-semibold"
-                        : food.confidence > 0.5
-                        ? "text-yellow-600 font-semibold"
-                        : "text-red-600 font-semibold"
-                    }
-                  >
-                    {Math.round(food.confidence * 100)}%
-                  </Typography>
                 </div>
               </div>
             </Card>

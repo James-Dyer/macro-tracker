@@ -8,14 +8,6 @@ class Logger {
       return; // Only log errors in production
     }
 
-    const timestamp = new Date().toISOString();
-    const logEntry = {
-      timestamp,
-      level,
-      message,
-      ...(data && { data }),
-    };
-
     // In development: structured logs to console
     if (this.isDevelopment) {
       const color = {

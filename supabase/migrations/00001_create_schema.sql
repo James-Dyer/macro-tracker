@@ -27,7 +27,7 @@ CREATE TABLE meal (
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   photo_url TEXT,
-  notes TEXT,
+  notes TEXT, -- User-provided notes and context. Used to store meal context provided during AI analysis (e.g., cooking method, preparation details).
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

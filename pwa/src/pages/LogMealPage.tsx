@@ -17,8 +17,11 @@ export function LogMealPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userContext, setUserContext] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const analyzeRunId = useRef(0);
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -33,10 +36,8 @@ export function LogMealPage() {
 
     const imageUrl = URL.createObjectURL(file);
     setSelectedImage(imageUrl);
+    setSelectedFile(file);
     setError(null);
-
-    // Auto-start analysis as soon as the user taps "Use Photo" in the native picker
-    void analyzePhoto(file);
   };
 
   const handleTakePhoto = () => {
@@ -47,12 +48,20 @@ export function LogMealPage() {
     analyzeRunId.current += 1; // cancel any in-flight analysis
     setIsAnalyzing(false);
     setError(null);
+    setUserContext('');
+    setSelectedFile(null);
     if (selectedImage) {
       URL.revokeObjectURL(selectedImage);
     }
     setSelectedImage(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleAnalyze = () => {
+    if (selectedFile) {
+      void analyzePhoto(selectedFile);
     }
   };
 
@@ -99,6 +108,7 @@ export function LogMealPage() {
           body: {
             photoPath: uploadResult.path,
             useScale: true,
+            context: userContext.trim() || undefined,
           },
         }
       );
@@ -121,6 +131,7 @@ export function LogMealPage() {
         state: {
           ...data,
           photoPath: uploadResult.path,
+          userContext: userContext.trim(),
         },
       });
     } catch (err) {
@@ -225,6 +236,29 @@ export function LogMealPage() {
               />
             </Card>
 
+            {/* User Context Input */}
+            {!isAnalyzing && (
+              <Card variant="filled" padding="md">
+                <Typography variant="label" className="text-gray-700 mb-2">
+                  Additional Context (Optional)
+                </Typography>
+                <Typography variant="bodySmall" color="secondary" className="mb-3">
+                  Add details to improve accuracy (e.g., "air fried", "grilled salmon")
+                </Typography>
+                <textarea
+                  value={userContext}
+                  onChange={(e) => setUserContext(e.target.value)}
+                  maxLength={500}
+                  placeholder="Example: grilled chicken, no sauce"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+                  rows={3}
+                />
+                <Typography variant="bodySmall" color="secondary" className="mt-1 text-right">
+                  {userContext.length}/500
+                </Typography>
+              </Card>
+            )}
+
             {/* Analysis indicator */}
             {isAnalyzing && (
               <Card variant="filled" padding="md" className="animate-pulse">
@@ -247,6 +281,14 @@ export function LogMealPage() {
             )}
 
             <div className="space-y-2">
+              {!isAnalyzing && (
+                <Button
+                  title="Analyze Meal"
+                  onClick={handleAnalyze}
+                  size="lg"
+                  fullWidth
+                />
+              )}
               <Button
                 title="Retake Photo"
                 variant="secondary"
