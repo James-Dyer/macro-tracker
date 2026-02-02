@@ -39,7 +39,25 @@ export function MacroSummary({
   const caloriesPercentage = (calories.current / calories.goal) * 100;
 
   return (
-    <Card variant="elevated" padding="lg" className="animate-scale-in">
+    <Card variant="elevated" padding="lg" className="animate-scale-in relative overflow-hidden">
+      {/* Decorative background element */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/5 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+
+      {/* Header */}
+      <div className="relative mb-6">
+        <Typography variant="h3" className="text-gray-900">
+          Calories
+        </Typography>
+        <div className="-mt-0.5 flex items-center gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+            Goal:
+          </span>
+          <span className="font-mono text-sm font-bold tabular-nums text-gray-400">
+            {Math.round(calories.goal)}
+          </span>
+        </div>
+      </div>
+
       {/* Main calorie display */}
       <div className="text-center mb-6 relative">
         <div className="inline-block relative">
@@ -73,29 +91,14 @@ export function MacroSummary({
 
           {/* Center text */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="font-mono text-5xl font-bold tabular-nums leading-none text-gray-900">
-              {Math.round(calories.current)}
+            <div className={`font-mono text-5xl font-bold tabular-nums leading-none ${isOverCalories ? 'text-red-600' : 'text-gray-900'
+              }`}>
+              {Math.round(caloriesRemaining)}
             </div>
-            <div className="text-sm text-gray-400 font-mono mt-1 tabular-nums">
-              / {Math.round(calories.goal)}
-            </div>
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mt-1">
-              calories
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mt-2">
+              remaining
             </div>
           </div>
-        </div>
-
-        {/* Remaining/Over indicator */}
-        <div className="mt-4">
-          <Typography
-            variant="body"
-            color={isOverCalories ? 'error' : 'secondary'}
-            className="font-medium"
-          >
-            {isOverCalories
-              ? `${Math.abs(Math.round(caloriesRemaining))} over goal`
-              : `${Math.round(caloriesRemaining)} remaining`}
-          </Typography>
         </div>
       </div>
 

@@ -111,9 +111,6 @@ export function HomePage() {
           <Typography variant="h3" className="text-gray-900">
             Meals
           </Typography>
-          <Typography variant="caption" color="tertiary" className="font-mono tabular-nums">
-            {totals.calories} cal
-          </Typography>
         </div>
 
         {todayMeals.length === 0 ? (
