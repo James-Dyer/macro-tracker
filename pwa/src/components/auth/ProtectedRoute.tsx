@@ -1,9 +1,14 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useOnboarding } from '../../hooks/useOnboarding';
 import { Typography } from '../ui';
 
 export function ProtectedRoute() {
-  const { session, loading } = useAuth();
+  const { session, loading: authLoading } = useAuth();
+  const { needsOnboarding, loading: onboardingLoading } = useOnboarding();
+  const location = useLocation();
+
+  const loading = authLoading || onboardingLoading;
 
   if (loading) {
     return (
@@ -20,6 +25,12 @@ export function ProtectedRoute() {
 
   if (!session) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Check if user needs onboarding
+  const isOnboardingRoute = location.pathname.startsWith('/onboarding');
+  if (needsOnboarding && !isOnboardingRoute) {
+    return <Navigate to="/onboarding/goals" replace />;
   }
 
   return <Outlet />;

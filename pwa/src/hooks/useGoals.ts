@@ -31,13 +31,7 @@ export function useGoals() {
 
       if (!user) {
         // Route guard handles this, but be defensive
-        setGoals({
-          calories: 2000,
-          protein: 150,
-          carbs: 250,
-          fat: 65,
-          fiber: 30,
-        });
+        setGoals(null);
         setLoading(false);
         return;
       }
@@ -49,15 +43,9 @@ export function useGoals() {
         .single();
 
       if (fetchError) {
-        // If no goals exist yet, use defaults
+        // If no goals exist yet, return null (user needs onboarding)
         if (fetchError.code === "PGRST116") {
-          setGoals({
-            calories: 2000,
-            protein: 150,
-            carbs: 250,
-            fat: 65,
-            fiber: 30,
-          });
+          setGoals(null);
         } else {
           throw fetchError;
         }
@@ -67,14 +55,8 @@ export function useGoals() {
     } catch (err) {
       console.error("Error fetching goals:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch goals");
-      // Set defaults on error
-      setGoals({
-        calories: 2000,
-        protein: 150,
-        carbs: 250,
-        fat: 65,
-        fiber: 30,
-      });
+      // On error, set to null (user may need onboarding)
+      setGoals(null);
     } finally {
       setLoading(false);
     }

@@ -9,6 +9,9 @@ import { ConfirmMealPage } from './pages/ConfirmMealPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { GoalsPage } from './pages/GoalsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { OnboardingGoalsPage } from './pages/onboarding/OnboardingGoalsPage';
+import { OnboardingHowItWorksPage } from './pages/onboarding/OnboardingHowItWorksPage';
+import { OnboardingFirstMealPage } from './pages/onboarding/OnboardingFirstMealPage';
 
 /**
  * App - Main application component
@@ -17,6 +20,9 @@ import { SettingsPage } from './pages/SettingsPage';
  * - /login : LoginPage (authentication)
  *
  * Protected routes (require auth):
+ * - /onboarding/goals : OnboardingGoalsPage (required - no bottom nav)
+ * - /onboarding/how-it-works : OnboardingHowItWorksPage (optional - with bottom nav)
+ * - /onboarding/first-meal : OnboardingFirstMealPage (optional - with bottom nav)
  * - / : HomePage (daily summary)
  * - /log : LogMealPage (camera/photo capture)
  * - /confirm : ConfirmMealPage (review AI results - new meal)
@@ -36,7 +42,16 @@ function App() {
 
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
+            {/* Required onboarding step - no AppLayout (no bottom nav) */}
+            <Route path="/onboarding/goals" element={<OnboardingGoalsPage />} />
+
+            {/* Main app routes - with AppLayout (bottom nav) */}
             <Route element={<AppLayout />}>
+              {/* Optional onboarding steps */}
+              <Route path="/onboarding/how-it-works" element={<OnboardingHowItWorksPage />} />
+              <Route path="/onboarding/first-meal" element={<OnboardingFirstMealPage />} />
+
+              {/* Main app pages */}
               <Route path="/" element={<HomePage />} />
               <Route path="/log" element={<LogMealPage />} />
               <Route path="/confirm/:mealId?" element={<ConfirmMealPage />} />

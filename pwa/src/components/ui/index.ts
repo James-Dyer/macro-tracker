@@ -7,3 +7,5 @@ export { CircularProgress } from './CircularProgress';
 export { MacroSummary } from './MacroSummary';
 export { MealCard } from './MealCard';
 export { SwipeableCard } from './SwipeableCard';
+export { ButtonGroup } from './ButtonGroup';
+export { Slider } from './Slider';
