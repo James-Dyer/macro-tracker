@@ -127,7 +127,7 @@ export function HistoryPage() {
                           thumbnailUrl={meal.thumbnail_url}
                           foodItems={meal.food_items}
                           onClick={() => {
-                            navigate(`/confirm/${meal.id}`, {
+                            navigate(`/dashboard/confirm/${meal.id}`, {
                               state: { mode: 'edit', meal },
                             });
                           }}

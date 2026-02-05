@@ -69,12 +69,12 @@ export function ConfirmMealPage() {
 
   // Redirect if invalid state
   if (mode === "new" && !analysisResult) {
-    navigate("/log", { replace: true });
+    navigate("/dashboard/log", { replace: true });
     return null;
   }
 
   if (mode === "edit" && !editMeal) {
-    navigate("/", { replace: true });
+    navigate("/dashboard", { replace: true });
     return null;
   }
 
@@ -179,7 +179,7 @@ export function ConfirmMealPage() {
       }
 
       // Navigate to home page on success
-      navigate("/", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       console.error("Error saving meal:", err);
       setError(err instanceof Error ? err.message : "Failed to save meal");

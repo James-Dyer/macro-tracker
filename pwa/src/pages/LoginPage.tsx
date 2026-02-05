@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Typography, Button, Input, Card } from '../components/ui';
 
@@ -7,6 +7,7 @@ type AuthMode = 'login' | 'signup';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,12 +15,20 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
+  // Check for mode query parameter (e.g., ?mode=signup)
+  useEffect(() => {
+    const modeParam = searchParams.get('mode');
+    if (modeParam === 'signup') {
+      setMode('signup');
+    }
+  }, [searchParams]);
+
   // Handle email confirmation callback
   useEffect(() => {
     const handleAuthCallback = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
       }
     };
     handleAuthCallback();
@@ -53,7 +62,7 @@ export function LoginPage() {
         if (signInError) throw signInError;
 
         // Navigation handled by auth state change
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
       }
     } catch (err: any) {
       console.error('Auth error:', err);

@@ -147,7 +147,7 @@ export function LogMealPage() {
       if (analyzeRunId.current !== runId) return;
 
       // Navigate to ConfirmMealPage with results
-      navigate('/confirm', {
+      navigate('/dashboard/confirm', {
         state: {
           ...data,
           photoPath: uploadResult.path,

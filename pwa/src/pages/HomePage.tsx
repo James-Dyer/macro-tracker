@@ -41,7 +41,7 @@ export function HomePage() {
     const file = event.target.files?.[0];
     if (file) {
       // Navigate to LogMealPage with the selected file
-      navigate('/log', {
+      navigate('/dashboard/log', {
         state: { selectedFile: file }
       });
     }
@@ -158,7 +158,7 @@ export function HomePage() {
                     thumbnailUrl={meal.thumbnail_url}
                     foodItems={meal.food_items}
                     onClick={() => {
-                      navigate(`/confirm/${meal.id}`, {
+                      navigate(`/dashboard/confirm/${meal.id}`, {
                         state: { mode: 'edit', meal },
                       });
                     }}

@@ -19,11 +19,11 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { to: '/', label: 'Home', icon: HomeIcon, type: 'standard' },
-  { to: '/history', label: 'History', icon: HistoryIcon, type: 'standard' },
-  { to: '/log', label: 'Log', icon: CameraIcon, type: 'center-action' },
-  { to: '/goals', label: 'Goals', icon: GoalsIcon, type: 'standard' },
-  { to: '/settings', label: 'More', icon: MoreIcon, type: 'standard' },
+  { to: '/dashboard', label: 'Home', icon: HomeIcon, type: 'standard' },
+  { to: '/dashboard/history', label: 'History', icon: HistoryIcon, type: 'standard' },
+  { to: '/dashboard/log', label: 'Log', icon: CameraIcon, type: 'center-action' },
+  { to: '/dashboard/goals', label: 'Goals', icon: GoalsIcon, type: 'standard' },
+  { to: '/dashboard/settings', label: 'More', icon: MoreIcon, type: 'standard' },
 ];
 
 export function BottomNav() {
@@ -33,7 +33,7 @@ export function BottomNav() {
   const handleCameraSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      navigate('/log', {
+      navigate('/dashboard/log', {
         state: { selectedFile: file }
       });
     }

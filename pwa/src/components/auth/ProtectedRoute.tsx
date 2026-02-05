@@ -32,9 +32,9 @@ export function ProtectedRoute() {
   }
 
   // Check if user needs onboarding (only redirect if not loading)
-  const isOnboardingRoute = location.pathname.startsWith('/onboarding');
+  const isOnboardingRoute = location.pathname.startsWith('/dashboard/onboarding');
   if (needsOnboarding && !isOnboardingRoute && !onboardingLoading) {
-    return <Navigate to="/onboarding/goals" replace />;
+    return <Navigate to="/dashboard/onboarding/goals" replace />;
   }
 
   return <Outlet />;

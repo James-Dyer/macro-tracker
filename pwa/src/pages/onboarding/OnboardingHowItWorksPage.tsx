@@ -90,13 +90,13 @@ export function OnboardingHowItWorksPage() {
         <div className="max-w-2xl mx-auto px-6 py-4 space-y-3">
           <Button
             title="Try It Now"
-            onClick={() => navigate('/onboarding/first-meal')}
+            onClick={() => navigate('/dashboard/onboarding/first-meal')}
             fullWidth
             size="lg"
             className="shadow-lg"
           />
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
             className="w-full py-3 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
           >
             Skip for Now

@@ -86,7 +86,7 @@ export function OnboardingGoalsPage() {
       await refetchOnboarding();
 
       console.log('[STATE DEBUG] OnboardingGoalsPage: Navigating to how-it-works');
-      navigate('/onboarding/how-it-works');
+      navigate('/dashboard/onboarding/how-it-works');
     } catch (error) {
       console.error('Failed to save goals:', error);
       // Error is shown via useGoals error state

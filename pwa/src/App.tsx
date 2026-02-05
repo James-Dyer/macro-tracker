@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { AppLayout } from './components/layout/AppLayout';
+import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { HomePage } from './pages/HomePage';
 import { LogMealPage } from './pages/LogMealPage';
@@ -17,19 +18,20 @@ import { OnboardingFirstMealPage } from './pages/onboarding/OnboardingFirstMealP
  * App - Main application component
  *
  * Public routes:
+ * - / : LandingPage (marketing/home)
  * - /login : LoginPage (authentication)
  *
  * Protected routes (require auth):
- * - /onboarding/goals : OnboardingGoalsPage (required - no bottom nav)
- * - /onboarding/how-it-works : OnboardingHowItWorksPage (optional - with bottom nav)
- * - /onboarding/first-meal : OnboardingFirstMealPage (optional - with bottom nav)
- * - / : HomePage (daily summary)
- * - /log : LogMealPage (camera/photo capture)
- * - /confirm : ConfirmMealPage (review AI results - new meal)
- * - /confirm/:mealId : ConfirmMealPage (edit existing meal)
- * - /history : HistoryPage (past meals)
- * - /goals : GoalsPage (daily macro goals)
- * - /settings : SettingsPage (account management)
+ * - /dashboard/onboarding/goals : OnboardingGoalsPage (required - no bottom nav)
+ * - /dashboard/onboarding/how-it-works : OnboardingHowItWorksPage (optional - with bottom nav)
+ * - /dashboard/onboarding/first-meal : OnboardingFirstMealPage (optional - with bottom nav)
+ * - /dashboard : HomePage (daily summary)
+ * - /dashboard/log : LogMealPage (camera/photo capture)
+ * - /dashboard/confirm : ConfirmMealPage (review AI results - new meal)
+ * - /dashboard/confirm/:mealId : ConfirmMealPage (edit existing meal)
+ * - /dashboard/history : HistoryPage (past meals)
+ * - /dashboard/goals : GoalsPage (daily macro goals)
+ * - /dashboard/settings : SettingsPage (account management)
  */
 
 function App() {
@@ -38,26 +40,27 @@ function App() {
       <BrowserRouter>
         <Routes>
           {/* Public routes */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
 
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             {/* Required onboarding step - no AppLayout (no bottom nav) */}
-            <Route path="/onboarding/goals" element={<OnboardingGoalsPage />} />
+            <Route path="/dashboard/onboarding/goals" element={<OnboardingGoalsPage />} />
 
             {/* Main app routes - with AppLayout (bottom nav) */}
             <Route element={<AppLayout />}>
               {/* Optional onboarding steps */}
-              <Route path="/onboarding/how-it-works" element={<OnboardingHowItWorksPage />} />
-              <Route path="/onboarding/first-meal" element={<OnboardingFirstMealPage />} />
+              <Route path="/dashboard/onboarding/how-it-works" element={<OnboardingHowItWorksPage />} />
+              <Route path="/dashboard/onboarding/first-meal" element={<OnboardingFirstMealPage />} />
 
               {/* Main app pages */}
-              <Route path="/" element={<HomePage />} />
-              <Route path="/log" element={<LogMealPage />} />
-              <Route path="/confirm/:mealId?" element={<ConfirmMealPage />} />
-              <Route path="/history" element={<HistoryPage />} />
-              <Route path="/goals" element={<GoalsPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/dashboard" element={<HomePage />} />
+              <Route path="/dashboard/log" element={<LogMealPage />} />
+              <Route path="/dashboard/confirm/:mealId?" element={<ConfirmMealPage />} />
+              <Route path="/dashboard/history" element={<HistoryPage />} />
+              <Route path="/dashboard/goals" element={<GoalsPage />} />
+              <Route path="/dashboard/settings" element={<SettingsPage />} />
             </Route>
           </Route>
 

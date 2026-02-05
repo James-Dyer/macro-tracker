@@ -83,13 +83,13 @@ export function OnboardingFirstMealPage() {
         <div className="max-w-2xl mx-auto px-6 py-4 space-y-3">
           <Button
             title="Take a Photo"
-            onClick={() => navigate('/log')}
+            onClick={() => navigate('/dashboard/log')}
             fullWidth
             size="lg"
             className="shadow-lg"
           />
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
             className="w-full py-3 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
           >
             Skip for Now
