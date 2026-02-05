@@ -193,7 +193,7 @@ export function ConfirmMealPage() {
   return (
     <div className="min-h-screen bg-app pb-24">
       {/* Header */}
-      <div className="px-5 pt-4 pb-3 bg-elevated/80 backdrop-blur-sm border-b border-themed sticky top-0 z-10">
+      <div className="px-5 pt-4 pb-3 bg-header backdrop-blur-sm border-b border-themed sticky top-0 z-10">
         <Typography variant="h2">
           {mode === "edit" ? "Edit Meal" : "Confirm Meal"}
         </Typography>

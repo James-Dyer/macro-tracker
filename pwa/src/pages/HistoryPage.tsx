@@ -63,7 +63,7 @@ export function HistoryPage() {
   return (
     <div className="min-h-screen bg-app pb-24">
       {/* Header */}
-      <div className="px-5 pt-4 pb-3 bg-elevated/80 backdrop-blur-sm border-b border-themed sticky top-0 z-10 animate-fade-in">
+      <div className="px-5 pt-4 pb-3 bg-header backdrop-blur-sm border-b border-themed sticky top-0 z-10 animate-fade-in">
         <Typography variant="h2">
           History
         </Typography>

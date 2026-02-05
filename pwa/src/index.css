@@ -263,6 +263,10 @@ html {
   background-color: var(--bg-primary);
 }
 
+.bg-header {
+  background-color: color-mix(in srgb, var(--bg-elevated) 80%, transparent);
+}
+
 .border-themed {
   border-color: var(--border-primary);
 }

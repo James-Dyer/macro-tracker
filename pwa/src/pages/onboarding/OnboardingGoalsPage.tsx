@@ -96,7 +96,7 @@ export function OnboardingGoalsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-amber-50 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-elevated/80 backdrop-blur-md border-b border-themed shadow-sm">
+      <div className="sticky top-0 z-10 bg-header backdrop-blur-md border-b border-themed shadow-sm">
         <div className="max-w-2xl mx-auto px-6 py-6">
           <Typography variant="h2" className="text-center">
             Set Your Daily Goals
