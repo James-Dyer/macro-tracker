@@ -92,9 +92,8 @@ export function MacroSummary({
           {/* Center text */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <div
-              className={`font-mono text-5xl font-bold tabular-nums leading-none ${
-                isOverCalories ? 'text-red-600 dark:text-red-400' : 'text-themed'
-              }`}
+              className={`font-mono text-5xl font-bold tabular-nums leading-none ${isOverCalories ? 'text-red-600 dark:text-red-400' : 'text-themed'
+                }`}
             >
               {Math.round(caloriesRemaining)}
             </div>
@@ -106,7 +105,7 @@ export function MacroSummary({
       </div>
 
       {/* Macro rings grid */}
-      <div className="grid grid-cols-4 gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+      <div className="grid grid-cols-4 gap-3 pt-6 border-t border-themed">
         <MacroRing {...protein} {...macroConfig.protein} />
         <MacroRing {...carbs} {...macroConfig.carbs} />
         <MacroRing {...fat} {...macroConfig.fat} />
