@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 /**
  * CacheEntry - Generic cache entry with TTL support
@@ -60,8 +60,8 @@ export function useCachedStorage<T>(config: { key: string; ttl: number }) {
     }
   });
 
-  // Set cached data with timestamp
-  const setCachedData = (data: T | null) => {
+  // Set cached data with timestamp (memoized to prevent infinite loops)
+  const setCachedData = useCallback((data: T | null) => {
     setCachedDataState(data);
 
     if (data === null) {
@@ -92,15 +92,10 @@ export function useCachedStorage<T>(config: { key: string; ttl: number }) {
         // Note: cleanup is handled by cacheManager.ts
       }
     }
-  };
+  }, [key, ttl]);
 
-  // Clear cache
-  const clearCache = () => {
-    setCachedData(null);
-  };
-
-  // Check if current cache is expired (for conditional refetching)
-  const isExpired = (): boolean => {
+  // Check if current cache is expired (memoized to prevent infinite loops)
+  const isExpired = useCallback((): boolean => {
     try {
       const item = window.localStorage.getItem(key);
       if (!item) return true;
@@ -113,7 +108,12 @@ export function useCachedStorage<T>(config: { key: string; ttl: number }) {
     } catch {
       return true;
     }
-  };
+  }, [key, ttl]);
+
+  // Clear cache (memoized)
+  const clearCache = useCallback(() => {
+    setCachedData(null);
+  }, [setCachedData]);
 
   // Sync state to localStorage on data change
   useEffect(() => {

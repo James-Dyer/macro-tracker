@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useCachedStorage } from './useCachedStorage';
 import { supabase } from '../services/supabase';
 
@@ -54,8 +54,8 @@ export function useSignedUrls(userId?: string) {
     }
   }, [cachedData]);
 
-  // Check if URL is still valid (not expired or close to expiry)
-  const isUrlValid = (path: string): boolean => {
+  // Check if URL is still valid (not expired or close to expiry) - memoized
+  const isUrlValid = useCallback((path: string): boolean => {
     const cached = urlCache[path];
     if (!cached) return false;
 
@@ -64,10 +64,10 @@ export function useSignedUrls(userId?: string) {
 
     // Consider expired if less than 10 minutes remaining
     return timeUntilExpiry > 10 * 60 * 1000;
-  };
+  }, [urlCache]);
 
-  // Get single signed URL (from cache or generate new)
-  const getSignedUrl = async (path: string | null | undefined): Promise<string | null> => {
+  // Get single signed URL (from cache or generate new) - memoized
+  const getSignedUrl = useCallback(async (path: string | null | undefined): Promise<string | null> => {
     if (!path) return null;
 
     // Check cache first
@@ -110,10 +110,10 @@ export function useSignedUrls(userId?: string) {
       console.error('[useSignedUrls] Error generating signed URL:', error);
       return null;
     }
-  };
+  }, [isUrlValid, urlCache, setCachedData]);
 
-  // Get multiple signed URLs (batch operation)
-  const getSignedUrls = async (paths: (string | null | undefined)[]): Promise<(string | null)[]> => {
+  // Get multiple signed URLs (batch operation) - memoized
+  const getSignedUrls = useCallback(async (paths: (string | null | undefined)[]): Promise<(string | null)[]> => {
     const validPaths = paths.filter((p): p is string => Boolean(p));
     const results: (string | null)[] = new Array(paths.length).fill(null);
 
@@ -162,17 +162,17 @@ export function useSignedUrls(userId?: string) {
     });
 
     return results;
-  };
+  }, [isUrlValid, getSignedUrl]);
 
-  // Clear cache (useful for logout)
-  const clearCache = () => {
+  // Clear cache (useful for logout) - memoized
+  const clearCache = useCallback(() => {
     setUrlCache({});
     setCachedData(null);
 
     if (import.meta.env.DEV) {
       console.log('[useSignedUrls] Cache cleared');
     }
-  };
+  }, [setCachedData]);
 
   return {
     getSignedUrl,
