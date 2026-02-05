@@ -22,7 +22,7 @@ interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, 'className'> {
 }
 
 const variantClasses: Record<CardVariant, string> = {
-  elevated: 'bg-elevated shadow-md dark:shadow-lg dark:border dark:border-gray-800',
+  elevated: 'bg-elevated shadow-md border border-themed dark:shadow-lg',
   outlined: 'bg-card border border-themed',
   filled: 'bg-tertiary',
 };

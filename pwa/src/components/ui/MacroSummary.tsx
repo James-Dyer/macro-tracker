@@ -70,7 +70,7 @@ export function MacroSummary({
               fill="none"
               stroke="currentColor"
               strokeWidth="12"
-              className="text-gray-200 dark:text-gray-900"
+              className="text-progress-track"
             />
             <circle
               cx="100"
@@ -106,7 +106,7 @@ export function MacroSummary({
       </div>
 
       {/* Macro rings grid */}
-      <div className="grid grid-cols-4 gap-3 pt-6 border-t border-gray-200 dark:border-gray-800">
+      <div className="grid grid-cols-4 gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
         <MacroRing {...protein} {...macroConfig.protein} />
         <MacroRing {...carbs} {...macroConfig.carbs} />
         <MacroRing {...fat} {...macroConfig.fat} />
@@ -140,7 +140,7 @@ function MacroRing({ current, goal, color, label }: MacroRingProps) {
             fill="none"
             stroke="currentColor"
             strokeWidth={strokeWidth}
-            className="text-gray-200 dark:text-gray-900"
+            className="text-progress-track"
           />
           <circle
             cx={size / 2}

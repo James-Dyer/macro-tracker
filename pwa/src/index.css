@@ -58,6 +58,9 @@
   --accent-primary: theme('colors.primary.light');
   --accent-hover: theme('colors.primary');
 
+  /* Progress tracks */
+  --progress-track: theme('colors.gray.100');
+
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -91,6 +94,9 @@
   /* Accents */
   --accent-primary: theme('colors.primary.light');
   --accent-hover: theme('colors.primary');
+
+  /* Progress tracks */
+  --progress-track: var(--bg-primary);
 
   /* Shadows - more subtle in dark mode */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
@@ -281,6 +287,10 @@ html {
 
 .text-themed-tertiary {
   color: var(--text-tertiary);
+}
+
+.text-progress-track {
+  color: var(--progress-track);
 }
 
 /* Dark mode - enhance shadows and glows */
