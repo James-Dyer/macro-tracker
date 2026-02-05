@@ -66,7 +66,6 @@ export function useGoals() {
   const saveGoals = async (newGoals: Omit<DailyGoal, "id" | "user_id" | "created_at" | "updated_at">) => {
     try {
       if (!user) {
-        // Route guard handles this, but be defensive
         throw new Error("Not authenticated");
       }
 

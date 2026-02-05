@@ -1,12 +1,16 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useOnboarding } from '../../hooks/useOnboarding';
 import { Typography } from '../ui';
 
 export function ProtectedRoute() {
-  const { session, loading: authLoading } = useAuth();
-  const { needsOnboarding, loading: onboardingLoading } = useOnboarding();
+  const { session, loading: authLoading, needsOnboarding, onboardingLoading } = useAuth();
   const location = useLocation();
+
+  console.log('[STATE DEBUG] ProtectedRoute sees:', {
+    pathname: location.pathname,
+    needsOnboarding,
+    onboardingLoading
+  });
 
   const loading = authLoading || onboardingLoading;
 
@@ -27,9 +31,9 @@ export function ProtectedRoute() {
     return <Navigate to="/login" replace />;
   }
 
-  // Check if user needs onboarding
+  // Check if user needs onboarding (only redirect if not loading)
   const isOnboardingRoute = location.pathname.startsWith('/onboarding');
-  if (needsOnboarding && !isOnboardingRoute) {
+  if (needsOnboarding && !isOnboardingRoute && !onboardingLoading) {
     return <Navigate to="/onboarding/goals" replace />;
   }
 

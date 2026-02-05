@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Typography, Input, Button, Card, ButtonGroup, Slider } from '../../components/ui';
 import { useGoals } from '../../hooks/useGoals';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   type Goal,
   type ActivityLevel,
@@ -17,6 +18,7 @@ type Mode = 'recommended' | 'manual';
 export function OnboardingGoalsPage() {
   const navigate = useNavigate();
   const { saveGoals, loading: savingGoals } = useGoals();
+  const { refetchOnboarding } = useAuth();
 
   // Mode state
   const [mode, setMode] = useState<Mode>('recommended');
@@ -77,7 +79,13 @@ export function OnboardingGoalsPage() {
         };
 
     try {
+      console.log('[STATE DEBUG] OnboardingGoalsPage: Saving goals...');
       await saveGoals(macros);
+
+      console.log('[STATE DEBUG] OnboardingGoalsPage: Calling refetch...');
+      await refetchOnboarding();
+
+      console.log('[STATE DEBUG] OnboardingGoalsPage: Navigating to how-it-works');
       navigate('/onboarding/how-it-works');
     } catch (error) {
       console.error('Failed to save goals:', error);
