@@ -73,14 +73,14 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 to-gray-50 flex items-center justify-center p-5">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 to-gray-50 dark:from-gray-900 dark:to-gray-950 flex items-center justify-center p-5">
       <div className="w-full max-w-md animate-scale-in">
         {/* Logo/Brand */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary shadow-lg flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary-light shadow-lg dark:shadow-primary-light/30 flex items-center justify-center">
             <span className="text-3xl">🥗</span>
           </div>
-          <Typography variant="h1" className="text-gray-900 mb-2">
+          <Typography variant="h1" className="mb-2">
             MacroTracker
           </Typography>
           <Typography variant="body" color="secondary">
@@ -90,15 +90,15 @@ export function LoginPage() {
 
         <Card variant="elevated" padding="lg">
           {/* Tab Switcher */}
-          <div className="flex gap-2 mb-6 p-1 bg-gray-100 rounded-xl">
+          <div className="flex gap-2 mb-6 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
             <button
               type="button"
               onClick={() => setMode('login')}
               className={`
                 flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all
                 ${mode === 'login'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }
               `}
             >
@@ -110,8 +110,8 @@ export function LoginPage() {
               className={`
                 flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all
                 ${mode === 'signup'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }
               `}
             >
@@ -122,8 +122,8 @@ export function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Success Message */}
             {message && (
-              <Card variant="filled" padding="md" className="bg-primary/10 border border-primary/20">
-                <Typography variant="bodySmall" className="text-primary-dark">
+              <Card variant="filled" padding="md" className="bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30">
+                <Typography variant="bodySmall" className="text-primary-dark dark:text-primary-light">
                   {message}
                 </Typography>
               </Card>
@@ -131,8 +131,8 @@ export function LoginPage() {
 
             {/* Error Message */}
             {error && (
-              <Card variant="filled" padding="md" className="bg-red-50 border border-red-200">
-                <Typography variant="bodySmall" className="text-red-700">
+              <Card variant="filled" padding="md" className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
+                <Typography variant="bodySmall" className="text-red-700 dark:text-red-400">
                   {error}
                 </Typography>
               </Card>
@@ -140,7 +140,7 @@ export function LoginPage() {
 
             {/* Email Input */}
             <div>
-              <Typography variant="label" className="mb-2 block text-gray-700">
+              <Typography variant="label" className="mb-2 block text-gray-700 dark:text-gray-300">
                 Email
               </Typography>
               <Input
@@ -155,7 +155,7 @@ export function LoginPage() {
 
             {/* Password Input */}
             <div>
-              <Typography variant="label" className="mb-2 block text-gray-700">
+              <Typography variant="label" className="mb-2 block text-gray-700 dark:text-gray-300">
                 Password
               </Typography>
               <Input

@@ -45,14 +45,14 @@ export function MacroSummary({
 
       {/* Header */}
       <div className="relative mb-6">
-        <Typography variant="h3" className="text-gray-900">
+        <Typography variant="h3" className="text-themed">
           Calories
         </Typography>
         <div className="-mt-0.5 flex items-center gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+          <span className="text-xs font-semibold uppercase tracking-wider text-themed-tertiary">
             Goal:
           </span>
-          <span className="font-mono text-sm font-bold tabular-nums text-gray-400">
+          <span className="font-mono text-sm font-bold tabular-nums text-themed-tertiary">
             {Math.round(calories.goal)}
           </span>
         </div>
@@ -70,7 +70,7 @@ export function MacroSummary({
               fill="none"
               stroke="currentColor"
               strokeWidth="12"
-              className="text-gray-100"
+              className="text-gray-200 dark:text-gray-900"
             />
             <circle
               cx="100"
@@ -91,11 +91,14 @@ export function MacroSummary({
 
           {/* Center text */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className={`font-mono text-5xl font-bold tabular-nums leading-none ${isOverCalories ? 'text-red-600' : 'text-gray-900'
-              }`}>
+            <div
+              className={`font-mono text-5xl font-bold tabular-nums leading-none ${
+                isOverCalories ? 'text-red-600 dark:text-red-400' : 'text-themed'
+              }`}
+            >
               {Math.round(caloriesRemaining)}
             </div>
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mt-2">
+            <div className="text-xs font-semibold text-themed-secondary uppercase tracking-wider mt-2">
               remaining
             </div>
           </div>
@@ -103,7 +106,7 @@ export function MacroSummary({
       </div>
 
       {/* Macro rings grid */}
-      <div className="grid grid-cols-4 gap-3 pt-6 border-t border-gray-200">
+      <div className="grid grid-cols-4 gap-3 pt-6 border-t border-gray-200 dark:border-gray-800">
         <MacroRing {...protein} {...macroConfig.protein} />
         <MacroRing {...carbs} {...macroConfig.carbs} />
         <MacroRing {...fat} {...macroConfig.fat} />
@@ -137,7 +140,7 @@ function MacroRing({ current, goal, color, label }: MacroRingProps) {
             fill="none"
             stroke="currentColor"
             strokeWidth={strokeWidth}
-            className="text-gray-100"
+            className="text-gray-200 dark:text-gray-900"
           />
           <circle
             cx={size / 2}
@@ -163,10 +166,10 @@ function MacroRing({ current, goal, color, label }: MacroRingProps) {
 
       {/* Label below ring */}
       <div className="mt-2 text-center">
-        <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+        <div className="text-xs font-medium text-themed-secondary uppercase tracking-wide">
           {label}
         </div>
-        <div className="text-xs text-gray-400 font-mono tabular-nums mt-0.5">
+        <div className="text-xs text-themed-tertiary font-mono tabular-nums mt-0.5">
           / {goal}g
         </div>
       </div>

@@ -22,6 +22,7 @@
   --color-gray-700: #44403c;
   --color-gray-800: #292524;
   --color-gray-900: #1c1917;
+  --color-gray-950: #0a0908;
 
   --font-family-sans: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-family-mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
@@ -35,18 +36,105 @@
   --sal: env(safe-area-inset-left);
 }
 
+/* Theme variables - Light Mode (default) */
+:root {
+  /* Backgrounds */
+  --bg-primary: theme('colors.gray.50');
+  --bg-secondary: theme('colors.white');
+  --bg-tertiary: theme('colors.gray.100');
+  --bg-elevated: theme('colors.white');
+
+  /* Text colors */
+  --text-primary: theme('colors.gray.900');
+  --text-secondary: theme('colors.gray.600');
+  --text-tertiary: theme('colors.gray.400');
+  --text-inverse: theme('colors.white');
+
+  /* Borders */
+  --border-primary: theme('colors.gray.200');
+  --border-secondary: theme('colors.gray.300');
+
+  /* Accents */
+  --accent-primary: theme('colors.primary.light');
+  --accent-hover: theme('colors.primary');
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  /* Input states */
+  --input-bg: theme('colors.gray.50');
+  --input-bg-focus: theme('colors.white');
+  --input-border: theme('colors.gray.200');
+  --input-border-focus: theme('colors.primary.light');
+}
+
+/* Theme variables - Dark Mode */
+.dark {
+  /* Backgrounds */
+  --bg-primary: theme('colors.gray.900');
+  --bg-secondary: theme('colors.gray.800');
+  --bg-tertiary: theme('colors.gray.800');
+  --bg-elevated: theme('colors.gray.800');
+
+  /* Text colors */
+  --text-primary: theme('colors.white');
+  --text-secondary: theme('colors.gray.300');
+  --text-tertiary: theme('colors.gray.500');
+  --text-inverse: theme('colors.gray.900');
+
+  /* Borders */
+  --border-primary: theme('colors.gray.800');
+  --border-secondary: theme('colors.gray.700');
+
+  /* Accents */
+  --accent-primary: theme('colors.primary.light');
+  --accent-hover: theme('colors.primary');
+
+  /* Shadows - more subtle in dark mode */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+
+  /* Input states */
+  --input-bg: theme('colors.gray.900');
+  --input-bg-focus: theme('colors.gray.800');
+  --input-border: theme('colors.gray.700');
+  --input-border-focus: theme('colors.primary.light');
+}
+
+/* Subtle grid pattern for dark mode atmosphere */
+.dark body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.03;
+  background-image:
+    linear-gradient(to right, theme('colors.primary.light') 1px, transparent 1px),
+    linear-gradient(to bottom, theme('colors.primary.light') 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* Base styles */
 body {
-  @apply bg-gray-50 text-gray-900 antialiased;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  @apply antialiased;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
   font-feature-settings: "kern" 1, "liga" 1;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  position: relative;
 }
 
 /* Allow text selection in inputs */
-input, textarea {
+input,
+textarea {
   -webkit-user-select: text;
   user-select: text;
 }
@@ -74,6 +162,7 @@ html {
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -85,6 +174,7 @@ html {
     opacity: 0;
     transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -95,6 +185,7 @@ html {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -113,10 +204,21 @@ html {
 }
 
 /* Stagger delays for lists */
-.stagger-1 { animation-delay: 0.05s; }
-.stagger-2 { animation-delay: 0.1s; }
-.stagger-3 { animation-delay: 0.15s; }
-.stagger-4 { animation-delay: 0.2s; }
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+
+.stagger-2 {
+  animation-delay: 0.1s;
+}
+
+.stagger-3 {
+  animation-delay: 0.15s;
+}
+
+.stagger-4 {
+  animation-delay: 0.2s;
+}
 
 /* Number formatting for data */
 .tabular-nums {
@@ -134,7 +236,7 @@ html {
   appearance: none;
   width: 20px;
   height: 20px;
-  background: var(--color-primary);
+  background: var(--accent-primary);
   border-radius: 50%;
   cursor: pointer;
 }
@@ -142,8 +244,57 @@ html {
 .slider::-moz-range-thumb {
   width: 20px;
   height: 20px;
-  background: var(--color-primary);
+  background: var(--accent-primary);
   border-radius: 50%;
   cursor: pointer;
   border: none;
+}
+
+/* Dark mode utilities */
+.bg-elevated {
+  background-color: var(--bg-elevated);
+}
+
+.bg-card {
+  background-color: var(--bg-secondary);
+}
+
+.bg-app {
+  background-color: var(--bg-primary);
+}
+
+.border-themed {
+  border-color: var(--border-primary);
+}
+
+.text-themed {
+  color: var(--text-primary);
+}
+
+.text-themed-secondary {
+  color: var(--text-secondary);
+}
+
+.text-themed-tertiary {
+  color: var(--text-tertiary);
+}
+
+/* Dark mode - enhance shadows and glows */
+.dark .glow-primary {
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
+}
+
+/* Smooth theme transitions for all interactive elements */
+button,
+input,
+select,
+textarea,
+a,
+.card,
+[class*="bg-"],
+[class*="border-"],
+[class*="text-"] {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }

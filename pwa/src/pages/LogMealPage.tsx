@@ -170,10 +170,10 @@ export function LogMealPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-app pb-24">
       {/* Header */}
-      <div className="px-5 pt-4 pb-3 bg-white/80 backdrop-blur-sm border-b border-gray-200/60 sticky top-0 z-10">
-        <Typography variant="h2" className="text-gray-900">
+      <div className="px-5 pt-4 pb-3 bg-elevated/80 backdrop-blur-sm border-b border-themed sticky top-0 z-10">
+        <Typography variant="h2">
           Log Meal
         </Typography>
         <Typography variant="bodySmall" color="secondary" className="mt-0.5">
@@ -196,10 +196,10 @@ export function LogMealPage() {
           /* Camera Prompt */
           <div className="animate-fade-in">
             <Card padding="none" variant="elevated" className="overflow-hidden">
-              <div className="aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center border-b border-gray-200">
+              <div className="aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center border-b border-themed">
                 <div className="text-center">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white shadow-md flex items-center justify-center">
-                    <CameraIcon className="w-10 h-10 text-gray-400" />
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white dark:bg-gray-700 shadow-md flex items-center justify-center">
+                    <CameraIcon className="w-10 h-10 text-gray-400 dark:text-gray-500" />
                   </div>
                   <Typography variant="body" color="secondary" className="font-medium">
                     Ready to scan

@@ -42,12 +42,12 @@ const variantClasses: Record<TypographyVariant, string> = {
 };
 
 const colorClasses: Record<TypographyColor, string> = {
-  primary: 'text-gray-900',
-  secondary: 'text-gray-600',
-  tertiary: 'text-gray-400',
-  inverse: 'text-white',
-  error: 'text-red-500',
-  success: 'text-green-600',
+  primary: 'text-themed',
+  secondary: 'text-themed-secondary',
+  tertiary: 'text-gray-400 dark:text-gray-500',
+  inverse: 'text-white dark:text-gray-900',
+  error: 'text-red-500 dark:text-red-400',
+  success: 'text-green-600 dark:text-primary-light',
 };
 
 export function Typography({

@@ -49,11 +49,14 @@ export function Input({
       <div
         className={`
           flex items-center
-          bg-gray-50 border rounded-xl
+          rounded-xl border
           min-h-[48px]
           transition-colors duration-150
-          ${isFocused ? 'border-primary bg-white' : 'border-gray-200'}
-          ${error ? 'border-red-500' : ''}
+          ${isFocused
+            ? 'border-primary-light bg-card dark:bg-gray-800 dark:border-primary-light'
+            : 'border-themed bg-tertiary dark:bg-gray-900'
+          }
+          ${error ? 'border-red-500 dark:border-red-400' : ''}
         `}
       >
         {leftIcon && (
@@ -66,7 +69,7 @@ export function Input({
           type={actualType}
           className={`
             flex-1 px-3 py-3 bg-transparent
-            text-base text-gray-900 placeholder-gray-400
+            text-base text-themed placeholder-gray-400 dark:placeholder-gray-500
             outline-none
             ${leftIcon ? 'pl-1' : ''}
             ${rightIcon || showPasswordToggle ? 'pr-1' : ''}
@@ -80,7 +83,7 @@ export function Input({
           <button
             type="button"
             onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-            className="pr-3 text-xs text-gray-400 hover:text-gray-600"
+            className="pr-3 text-xs text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
           >
             {isPasswordVisible ? 'Hide' : 'Show'}
           </button>

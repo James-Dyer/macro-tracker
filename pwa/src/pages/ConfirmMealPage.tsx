@@ -191,10 +191,10 @@ export function ConfirmMealPage() {
   const totals = calculateTotals();
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-app pb-24">
       {/* Header */}
-      <div className="px-5 pt-4 pb-3 bg-white/80 backdrop-blur-sm border-b border-gray-200/60 sticky top-0 z-10">
-        <Typography variant="h2" className="text-gray-900">
+      <div className="px-5 pt-4 pb-3 bg-elevated/80 backdrop-blur-sm border-b border-themed sticky top-0 z-10">
+        <Typography variant="h2">
           {mode === "edit" ? "Edit Meal" : "Confirm Meal"}
         </Typography>
         <Typography variant="bodySmall" color="secondary" className="mt-0.5">
@@ -244,7 +244,7 @@ export function ConfirmMealPage() {
                   style={{ width: `${analysisResult.confidence * 100}%` }}
                 />
               </div>
-              <Typography variant="bodySmall" className="font-semibold text-gray-900">
+              <Typography variant="bodySmall" className="font-semibold text-themed">
                 {Math.round(analysisResult.confidence * 100)}%
               </Typography>
             </div>
@@ -381,7 +381,7 @@ export function ConfirmMealPage() {
 
         {/* Totals Summary */}
         <Card variant="elevated" padding="md">
-          <Typography variant="h3" className="text-gray-900 mb-3">
+          <Typography variant="h3" className="mb-3">
             Meal Totals
           </Typography>
           <div className="grid grid-cols-2 gap-3">

@@ -40,7 +40,7 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-200/60 safe-area-pb z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-elevated/95 backdrop-blur-xl border-t border-themed safe-area-pb z-50">
       {/* Hidden file input for camera button */}
       <input
         ref={cameraInputRef}
@@ -58,7 +58,7 @@ export function BottomNav() {
               <div key={item.to} className="flex-1 flex justify-center">
                 <button
                   onClick={() => cameraInputRef.current?.click()}
-                  className="w-14 h-14 rounded-full bg-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+                  className="w-14 h-14 rounded-full bg-primary-light shadow-lg dark:shadow-primary-light/30 flex items-center justify-center active:scale-95 transition-transform"
                 >
                   <item.icon className="w-7 h-7 text-white" isActive={false} />
                 </button>
@@ -81,13 +81,13 @@ export function BottomNav() {
                 <>
                   <item.icon
                     className={`w-6 h-6 transition-colors ${
-                      isActive ? 'text-primary' : 'text-gray-400'
+                      isActive ? 'text-primary-light' : 'text-gray-400 dark:text-gray-500'
                     }`}
                     isActive={isActive}
                   />
                   <span
                     className={`text-xs font-medium transition-colors ${
-                      isActive ? 'text-primary' : 'text-gray-500'
+                      isActive ? 'text-primary-light' : 'text-gray-500 dark:text-gray-400'
                     }`}
                   >
                     {item.label}

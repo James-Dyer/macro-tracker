@@ -28,9 +28,9 @@ interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'cla
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-white active:bg-primary-dark disabled:bg-gray-300',
-  secondary: 'bg-transparent border-2 border-primary text-primary active:bg-primary/10 disabled:border-gray-300 disabled:text-gray-400',
-  ghost: 'bg-transparent text-primary active:bg-primary/10 disabled:text-gray-400',
+  primary: 'bg-primary-light text-white active:bg-primary disabled:bg-gray-300 dark:disabled:bg-gray-700 dark:disabled:text-gray-500 dark:shadow-lg dark:shadow-primary/20',
+  secondary: 'bg-transparent border-2 border-primary-light text-primary-light active:bg-primary/10 disabled:border-gray-300 disabled:text-gray-400 dark:disabled:border-gray-700 dark:disabled:text-gray-600 dark:border-primary-light/80 dark:text-primary-light dark:active:bg-primary-light/10',
+  ghost: 'bg-transparent text-primary-light active:bg-primary/10 disabled:text-gray-400 dark:disabled:text-gray-600 dark:active:bg-primary-light/10',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -76,7 +76,7 @@ export function Button({
 }
 
 function Spinner({ color }: { color: 'white' | 'primary' }) {
-  const colorClass = color === 'white' ? 'border-white' : 'border-primary';
+  const colorClass = color === 'white' ? 'border-white' : 'border-primary-light';
 
   return (
     <div

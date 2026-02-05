@@ -49,10 +49,10 @@ export function GoalsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-app pb-24">
       {/* Header */}
-      <div className="px-5 pt-4 pb-3 bg-white/80 backdrop-blur-sm border-b border-gray-200/60 sticky top-0 z-10 animate-fade-in">
-        <Typography variant="h2" className="text-gray-900">
+      <div className="px-5 pt-4 pb-3 bg-elevated/80 backdrop-blur-sm border-b border-themed sticky top-0 z-10 animate-fade-in">
+        <Typography variant="h2">
           Daily Goals
         </Typography>
         <Typography variant="bodySmall" color="secondary" className="mt-0.5">
@@ -63,8 +63,8 @@ export function GoalsPage() {
       <div className="px-5 py-5">
         {/* Daily Goals */}
         <Card variant="elevated" padding="lg" className="animate-slide-up stagger-1">
-          <div className="flex items-center justify-between mb-5 pb-4 border-b border-gray-200">
-            <Typography variant="h3" className="text-gray-900">
+          <div className="flex items-center justify-between mb-5 pb-4 border-b border-themed">
+            <Typography variant="h3">
               Daily Goals
             </Typography>
             <div className="flex gap-1.5">

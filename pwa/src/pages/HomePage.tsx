@@ -50,9 +50,9 @@ export function HomePage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-app flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-4 border-primary-light border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <Typography variant="body" color="secondary">
             Loading your meals...
           </Typography>
@@ -64,9 +64,9 @@ export function HomePage() {
   // Error state
   if (mealsError) {
     return (
-      <div className="px-5 py-8">
-        <Card variant="filled" padding="md" className="bg-red-50 border border-red-200">
-          <Typography variant="body" className="text-red-700">
+      <div className="px-5 py-8 bg-app min-h-screen">
+        <Card variant="filled" padding="md" className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
+          <Typography variant="body" className="text-red-700 dark:text-red-400">
             {mealsError}
           </Typography>
         </Card>
@@ -75,7 +75,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="pb-24 min-h-screen">
+    <div className="pb-24 min-h-screen bg-app">
       {/* Hidden file input for camera */}
       <input
         ref={fileInputRef}
@@ -87,8 +87,8 @@ export function HomePage() {
       />
 
       {/* Header */}
-      <div className="px-5 pt-4 pb-3 bg-white/80 backdrop-blur-sm border-b border-gray-200/60 sticky top-0 z-10 animate-fade-in">
-        <Typography variant="h2" className="text-gray-900">
+      <div className="px-5 pt-4 pb-3 bg-elevated/80 backdrop-blur-sm border-b border-themed sticky top-0 z-10 animate-fade-in">
+        <Typography variant="h2">
           Today
         </Typography>
         <Typography variant="bodySmall" color="secondary" className="mt-0.5">
@@ -108,7 +108,7 @@ export function HomePage() {
       {/* Meals Section */}
       <div className="px-5 pb-6">
         <div className="flex items-center justify-between mb-4 animate-slide-up stagger-1">
-          <Typography variant="h3" className="text-gray-900">
+          <Typography variant="h3">
             Meals
           </Typography>
         </div>
@@ -117,10 +117,10 @@ export function HomePage() {
           <div className="text-center py-12 animate-fade-in">
             <button
               onClick={handleCameraClick}
-              className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors active:scale-95"
+              className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary-light/10 hover:bg-primary-light/20 dark:bg-primary-light/20 dark:hover:bg-primary-light/30 flex items-center justify-center transition-colors active:scale-95"
             >
               <svg
-                className="w-8 h-8 text-primary"
+                className="w-8 h-8 text-primary-light"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
