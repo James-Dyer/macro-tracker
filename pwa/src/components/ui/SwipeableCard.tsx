@@ -198,7 +198,7 @@ export function SwipeableCard({
           transform: `translateX(${-swipeX}px)`,
           transition: isSwiping ? "none" : "transform 0.3s ease-out",
         }}
-        className="bg-white"
+        className="--bg-primary"
       >
         {children}
       </div>
@@ -210,17 +210,17 @@ export function SwipeableCard({
           onClick={handleCancelDelete}
         >
           <div
-            className="bg-white rounded-lg p-6 mx-4 max-w-sm w-full shadow-xl animate-scale-in"
+            className="bg-elevated rounded-lg p-6 mx-4 max-w-sm w-full shadow-xl animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold mb-2">Delete this meal?</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-lg font-semibold mb-2 text-primary">Delete this meal?</h3>
+            <p className="text-secondary mb-6">
               This action cannot be undone.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={handleCancelDelete}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                className="flex-1 px-4 py-2 border border-themed rounded-lg font-medium hover:bg-tertiary active:bg-tertiary transition-colors text-primary"
               >
                 Cancel
               </button>

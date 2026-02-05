@@ -54,10 +54,10 @@ export function MealCard({ timestamp, photoUrl, thumbnailUrl, foodItems, onClick
       `}
       onClick={onClick}
     >
-      <div className="flex gap-3 p-3">
+      <div className="flex gap-3 p-3 bg-elevated">
         {/* Photo thumbnail */}
         {displayUrl ? (
-          <div className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-gray-100">
+          <div className="relative flex-shrink-0 w-20 h-20 overflow-hidden bg-gray-100">
             <img
               src={displayUrl}
               alt="Meal"
@@ -67,7 +67,7 @@ export function MealCard({ timestamp, photoUrl, thumbnailUrl, foodItems, onClick
             />
           </div>
         ) : (
-          <div className="flex-shrink-0 w-20 h-20 rounded-lg bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center border border-gray-200">
+          <div className="flex-shrink-0 w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center border border-gray-200">
             <svg
               className="w-8 h-8 text-gray-300"
               fill="none"
