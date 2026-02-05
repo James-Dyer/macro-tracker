@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../contexts/ThemeContext';
+import { getCacheStats, clearUserCaches } from '../utils/cacheManager';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * SettingsPage - Account management and app info
@@ -16,16 +18,46 @@ import { useTheme } from '../contexts/ThemeContext';
 export function SettingsPage() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const [userEmail, setUserEmail] = useState<string>('');
+  const [cacheStats, setCacheStats] = useState({ totalCaches: 0, expiredCaches: 0, cacheSizeBytes: 0 });
+  const [isClearing, setIsClearing] = useState(false);
 
-  // Fetch user email
+  // Fetch user email and cache stats
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUserEmail(user?.email || 'Not signed in');
     };
     fetchUser();
+
+    // Update cache stats
+    const stats = getCacheStats();
+    setCacheStats(stats);
   }, []);
+
+  // Clear all caches for current user
+  const handleClearCache = async () => {
+    if (!user) return;
+
+    setIsClearing(true);
+    try {
+      clearUserCaches(user.id);
+
+      // Update stats
+      const stats = getCacheStats();
+      setCacheStats(stats);
+
+      // Show success feedback
+      if (import.meta.env.DEV) {
+        console.log('[SettingsPage] Cache cleared successfully');
+      }
+    } catch (err) {
+      console.error('[SettingsPage] Error clearing cache:', err);
+    } finally {
+      setIsClearing(false);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -118,8 +150,66 @@ export function SettingsPage() {
           </div>
         </Card>
 
+        {/* Cache Management */}
+        <Card variant="elevated" padding="lg" className="animate-slide-up stagger-3">
+          <Typography variant="h3" className="mb-5 pb-4 border-b border-themed">
+            Cache
+          </Typography>
+
+          <div className="space-y-5">
+            <div>
+              <Typography variant="body" className="font-semibold mb-3">
+                Cache Statistics
+              </Typography>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Typography variant="bodySmall" color="tertiary">
+                    Total Caches
+                  </Typography>
+                  <Typography variant="bodySmall" color="secondary" className="font-mono tabular-nums">
+                    {cacheStats.totalCaches}
+                  </Typography>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Typography variant="bodySmall" color="tertiary">
+                    Cache Size
+                  </Typography>
+                  <Typography variant="bodySmall" color="secondary" className="font-mono tabular-nums">
+                    {(cacheStats.cacheSizeBytes / 1024).toFixed(1)} KB
+                  </Typography>
+                </div>
+                {cacheStats.expiredCaches > 0 && (
+                  <div className="flex items-center justify-between">
+                    <Typography variant="bodySmall" color="tertiary">
+                      Expired Caches
+                    </Typography>
+                    <Typography variant="bodySmall" className="font-mono tabular-nums text-yellow-600 dark:text-yellow-400">
+                      {cacheStats.expiredCaches}
+                    </Typography>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <Typography variant="bodySmall" color="tertiary" className="mb-3 block">
+                Clear cached data to free up storage or force a refresh. Your data on the server is safe.
+              </Typography>
+              <Button
+                title={isClearing ? 'Clearing...' : 'Clear Cache'}
+                variant="secondary"
+                onClick={handleClearCache}
+                loading={isClearing}
+                disabled={isClearing || cacheStats.totalCaches === 0}
+                size="md"
+                fullWidth
+              />
+            </div>
+          </div>
+        </Card>
+
         {/* App Info */}
-        <Card variant="filled" padding="lg" className="animate-slide-up stagger-3">
+        <Card variant="filled" padding="lg" className="animate-slide-up stagger-4">
           <Typography variant="label" color="secondary" className="mb-3 block">
             About
           </Typography>

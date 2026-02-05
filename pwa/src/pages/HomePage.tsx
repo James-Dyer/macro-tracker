@@ -1,8 +1,8 @@
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Typography, MacroSummary, MealCard, Card, SwipeableCard } from '../components/ui';
-import { useMeals } from '../hooks/useMeals';
-import { useGoals } from '../hooks/useGoals';
+import { useCachedMeals } from '../hooks/useCachedMeals';
+import { useCachedGoals } from '../hooks/useCachedGoals';
 
 /**
  * HomePage - Daily tracking overview
@@ -13,8 +13,8 @@ import { useGoals } from '../hooks/useGoals';
 export function HomePage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { loading: mealsLoading, error: mealsError, getTodayMeals, calculateDailyTotals, deleteMeal } = useMeals();
-  const { goals, loading: goalsLoading } = useGoals();
+  const { loading: mealsLoading, error: mealsError, getTodayMeals, calculateDailyTotals, deleteMeal } = useCachedMeals();
+  const { goals, loading: goalsLoading } = useCachedGoals();
 
   // Get today's meals
   const todayMeals = getTodayMeals();

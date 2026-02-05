@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -14,6 +15,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { OnboardingGoalsPage } from './pages/onboarding/OnboardingGoalsPage';
 import { OnboardingHowItWorksPage } from './pages/onboarding/OnboardingHowItWorksPage';
 import { OnboardingFirstMealPage } from './pages/onboarding/OnboardingFirstMealPage';
+import { cleanupExpiredCaches, getCacheStats } from './utils/cacheManager';
 
 /**
  * App - Main application component
@@ -36,6 +38,22 @@ import { OnboardingFirstMealPage } from './pages/onboarding/OnboardingFirstMealP
  */
 
 function App() {
+  // Clean up expired caches on app initialization
+  // Why: Prevents localStorage quota issues and ensures fresh data on startup
+  useEffect(() => {
+    cleanupExpiredCaches();
+
+    // Log cache stats in dev mode
+    if (import.meta.env.DEV) {
+      const stats = getCacheStats();
+      console.log('[App] Cache stats after cleanup:', {
+        totalCaches: stats.totalCaches,
+        expiredCaches: stats.expiredCaches,
+        cacheSizeKB: (stats.cacheSizeBytes / 1024).toFixed(1),
+      });
+    }
+  }, []);
+
   return (
     <ThemeProvider>
       <AuthProvider>

@@ -14,9 +14,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **MacroTracker** is an AI-powered PWA for tracking nutrition via food photos. Users photograph meals on a food scale, and the app uses AI vision to identify foods, read scale weight via OCR, and calculate complete nutrition data (calories, protein, carbs, fat, fiber).
 
 **Tech Stack:**
-- **Frontend:** React 19 + TypeScript PWA (Vite + Tailwind v4)
+- **Frontend:** React 19 + TypeScript PWA (Vite 7.2.4 + Tailwind v4)
 - **Backend:** Supabase (PostgreSQL, Auth, Storage, Edge Functions)
-- **AI:** Google Gemini Pro Vision (food recognition + OCR)
+- **AI:** Google Gemini 2.5 Flash Lite (primary) with OpenAI GPT-4o Mini fallback
 - **Deployment:** Progressive Web App (installable, offline-capable)
 
 **Key Differentiator:** Food scale integration for weight-based accuracy (vs. volume estimation competitors).
@@ -44,25 +44,40 @@ npm run lint       # ESLint check
 pwa/src/
 ├── pages/              # Route-level components
 │   ├── LoginPage       # Auth (login/signup tabs)
+│   ├── LandingPage     # Marketing page (dark theme, animated)
 │   ├── HomePage        # Daily summary + macro progress
-│   ├── LogMealPage     # Camera/photo capture
-│   ├── ConfirmMealPage # Review/edit AI results before saving
-│   ├── HistoryPage     # Calendar view of past meals
-│   └── SettingsPage    # Goals + account management
+│   ├── LogMealPage     # Camera/photo capture with optional context input
+│   ├── ConfirmMealPage # Review/edit AI results (create new or edit existing meal)
+│   ├── HistoryPage     # Past meals grouped by date
+│   ├── GoalsPage       # Daily macro goal management
+│   ├── SettingsPage    # Account, dark mode toggle, app info ("More" tab)
+│   └── onboarding/     # Onboarding flow for new users
+│       ├── OnboardingGoalsPage      # Recommended (BMR/TDEE calculator) vs Manual setup
+│       ├── OnboardingHowItWorksPage # App walkthrough
+│       └── OnboardingFirstMealPage  # Guided first meal capture
 ├── components/
-│   ├── ui/             # Reusable UI primitives (Button, Card, Input, etc.)
+│   ├── ui/             # Reusable UI primitives
+│   │   ├── Button, Input, Card, Typography, Slider, ProgressBar, ButtonGroup
+│   │   ├── MacroSummary    # Circular progress rings for daily goals
+│   │   ├── MealCard        # Displays meal with thumbnail, foods, macros
+│   │   └── SwipeableCard   # Swipe-to-delete gesture with fallback button
 │   ├── layout/         # AppLayout + BottomNav
-│   └── auth/           # ProtectedRoute (route guard)
+│   └── auth/           # ProtectedRoute (route guard with onboarding check)
 ├── hooks/              # Custom React hooks
-│   ├── useMeals        # Fetch/manage meals, calculate daily totals
+│   ├── useMeals        # Fetch/manage meals, calculate totals, delete/update
 │   ├── useGoals        # Fetch/save daily macro goals
-│   └── useSession      # Supabase auth session management
+│   ├── useSession      # Supabase auth session management
+│   └── useLocalStorage # Persist state to localStorage
 ├── contexts/           # React Context providers
-│   └── AuthContext     # Global auth state (wraps useSession)
+│   ├── AuthContext     # Global auth state, onboarding detection
+│   └── ThemeContext    # Dark/light theme toggle with localStorage
 ├── services/
 │   └── supabase.ts     # Supabase client initialization
 └── utils/
-    └── imageUtils.ts   # Image compression, validation, upload
+    ├── imageUtils.ts        # Compress, validate, upload images + thumbnails
+    ├── macroCalculations.ts # BMR + TDEE calculation (Mifflin-St Jeor)
+    ├── errors.ts            # Error parsing, categorization (ErrorCategory enum)
+    └── logger.ts            # Development-focused logging
 ```
 
 ### Routing Architecture
@@ -75,39 +90,99 @@ pwa/src/
 ### Authentication Flow
 
 1. **AuthContext** (`contexts/AuthContext.tsx`) provides global auth state via `useAuth()` hook
+   - Checks if user has `daily_goal` record to determine onboarding status
+   - Provides `refetchOnboarding()` for post-signup redirect to onboarding
 2. **useSession** hook manages Supabase session + `onAuthStateChange` listener
 3. **ProtectedRoute** component redirects unauthenticated users to `/login`
+   - Forces new users (no daily_goal) to `/dashboard/onboarding/goals`
 4. **LoginPage** has tab-based login/signup UI (email + password)
 5. Session persists in localStorage automatically (Supabase handles refresh tokens)
+
+**Onboarding Flow (New Users):**
+1. **OnboardingGoalsPage** - Set up daily macro goals:
+   - **Recommended mode:** BMR/TDEE calculator (age, sex, weight, height, goal, activity level)
+   - **Manual mode:** Direct macro entry
+   - Uses Mifflin-St Jeor equation for BMR calculation
+   - Protein bias slider (0.25-0.35) for customization
+2. **OnboardingHowItWorksPage** - App walkthrough and feature explanation
+3. **OnboardingFirstMealPage** - Guided first meal capture
 
 **Important:** All protected pages assume user is authenticated (ProtectedRoute enforces this). Data hooks gracefully return empty state if auth check fails (defensive coding).
 
 ### Data Flow
 
 **Hooks-based data management:**
-- `useMeals()` - Fetches meals with food_items via Postgres join, provides `getTodayMeals()` and `calculateDailyTotals()`
+- `useMeals()` - Fetches meals with food_items via Postgres join, provides:
+  - `getTodayMeals()` - Filters to current date
+  - `calculateDailyTotals(meals)` - Sums all macros
+  - `deleteMeal(id)` - Optimistic delete with revert on error
+  - `updateMeal(id, updates, foodItems)` - Edit meal notes and food items
+  - Generates 1-hour signed URLs for photos/thumbnails (cached in state)
 - `useGoals()` - Fetches user's daily macro goals, provides `saveGoals()` for upsert
 - Both hooks check `supabase.auth.getUser()` and return early with defaults if not authenticated
 
 **Edge Functions:**
-- `analyze-meal` - Takes photo path in Storage, downloads image with service role key, calls Gemini API for food recognition + nutrition data
-- `save-meal` - Accepts food items array, inserts meal + food_items with proper user_id association
+- `analyze-meal` - Takes photo path in Storage, optional user context (e.g., "fried chicken")
+  - Downloads image with service role key
+  - Calls Gemini 2.5 Flash Lite (primary) or GPT-4o Mini (fallback)
+  - Returns food recognition + nutrition data + optional scale weight (OCR)
+  - Sanitizes user context to prevent prompt injection
+- `save-meal` - Accepts food items array, timestamp, photo paths (full + thumbnail)
+  - Inserts meal + food_items with proper user_id association
+  - Validates ≥1 food item with name + positive weight
 
 **Storage:**
 - Photos uploaded to `meal-photos` bucket with RLS policies (user_id-based isolation)
-- Photos compressed client-side before upload (browser-image-compression)
+- **Dual-file strategy:**
+  - Full image: Compressed to ~1MB, max 1920px dimension
+  - Thumbnail: 400px max dimension, ~100KB, quality 0.85
+- Path format: `{userId}/{timestamp}-{random}.jpg` (thumbnail has `_thumb` suffix)
+- Photos compressed client-side before upload (browser-image-compression v2.0.2)
 
 ### Database Schema
 
 ```sql
--- Tables (see supabase/migrations/00001_create_schema.sql)
-daily_goal (user_id unique, calories, protein, carbs, fat, fiber)
-meal (user_id, timestamp, photo_url, notes)
-food_item (meal_id FK, name, weight_g, calories, protein, carbs, fat, fiber)
+-- Tables (see supabase/migrations/)
+daily_goal (
+  id UUID PK,
+  user_id UUID UNIQUE,
+  calories, protein, carbs, fat, fiber INTEGER,
+  created_at, updated_at TIMESTAMP
+)
+
+meal (
+  id UUID PK,
+  user_id UUID FK,
+  timestamp TIMESTAMP,
+  photo_url TEXT,        -- DEPRECATED: legacy public URLs
+  photo_path TEXT,       -- Storage path for full image (signed URLs)
+  thumbnail_path TEXT,   -- Storage path for thumbnail (signed URLs)
+  notes TEXT,            -- Optional user context for AI (e.g., "fried chicken")
+  created_at TIMESTAMP
+)
+
+food_item (
+  id UUID PK,
+  meal_id UUID FK,
+  name TEXT,
+  weight_g INTEGER,
+  calories INTEGER,
+  protein, carbs, fat, fiber NUMERIC(5,2)
+)
+
+-- Indexes:
+-- idx_meal_user_timestamp (meal.user_id, meal.timestamp DESC)
+-- idx_meal_photos (meal.photo_path, meal.thumbnail_path)
+-- idx_food_item_meal (food_item.meal_id)
 
 -- RLS Policies: All tables have user_id-based isolation
 -- food_item access controlled via meal ownership (EXISTS subquery)
 ```
+
+**Schema Migrations:**
+1. `00001_create_schema.sql` - Initial tables + RLS policies
+2. `00002_add_photo_path.sql` - Added photo_path for signed URLs
+3. `00003_add_thumbnail_path.sql` - Added thumbnail_path for mobile optimization
 
 **Important:** Daily totals are computed on read (not stored). Aggregation is instant for ~15 rows/day.
 
@@ -121,15 +196,29 @@ food_item (meal_id FK, name, weight_g, calories, protein, carbs, fat, fiber)
 
 **UI Components:**
 - All UI primitives in `components/ui/` with consistent API (variant, size, fullWidth props)
-- MacroSummary - Circular progress rings for daily goals
-- MealCard - Displays meal with food items, macro badges, photo thumbnail
-- BottomNav - Fixed navigation (Home, Log, History, Settings)
+- **MacroSummary** - Circular progress rings for daily goals (large 200px calorie ring + 4x 72px macro rings)
+- **MealCard** - Displays meal with thumbnail (80x80px), up to 2 foods shown (+ "N more"), macro badges
+- **SwipeableCard** - Swipe-to-delete gesture with fallback delete button for accessibility
+- **BottomNav** - Fixed navigation with 5 items:
+  - Home (daily summary)
+  - History (past meals)
+  - Log (center FAB - camera)
+  - Goals (macro targets)
+  - More (settings/account)
+
+**Theme System:**
+- **ThemeContext** provides dark/light mode toggle
+- Persists theme preference to localStorage
+- Applies `dark` class to document root for Tailwind dark mode
+- Toggle available in SettingsPage ("More" tab) with emoji indicator (🌙/☀️)
+- CSS variables in `index.css` define separate light/dark color tokens
 
 **Visual Style:**
 - Clean, minimal interface
-- Staggered animations for list items (`stagger-1`, `stagger-2`, etc.)
+- Staggered animations for list items (`stagger-1` through `stagger-4` with delays)
 - Gradient backgrounds for auth pages (differentiate from main app)
 - Monospace fonts for numerical data (tabular-nums)
+- iOS-safe area handling with `safe-area-inset-*` CSS variables
 
 ## Edge Function Patterns
 
@@ -210,6 +299,23 @@ if (!envValidation.valid) {
 3. Apply via Supabase Dashboard SQL Editor or CLI
 4. Update TypeScript interfaces in relevant hooks/components
 
+### Editing an Existing Meal
+
+1. User clicks MealCard on HomePage or HistoryPage
+2. Navigate to `/dashboard/confirm-meal?mealId={id}` (edit mode)
+3. ConfirmMealPage fetches meal data from `useMeals()`
+4. User can:
+   - Add new food items
+   - Remove existing food items
+   - Edit macros for any food
+   - Update meal notes
+5. On save, `useMeals().updateMeal()` handles:
+   - Delete removed food items
+   - Update modified food items
+   - Insert new food items
+   - Update meal notes
+6. Returns to previous page (Home or History)
+
 ## Important Constraints
 
 **Environment Variables:**
@@ -222,41 +328,129 @@ if (!envValidation.valid) {
 - Strict mode enabled - No implicit any, null checks enforced
 
 **PWA Configuration:**
-- Service worker auto-generates (vite-plugin-pwa)
-- Runtime caching: API calls 5min, images 7 days
-- Manifest in `vite.config.ts`
+- Service worker auto-generates (vite-plugin-pwa v1.2.0)
+- **Runtime caching strategy (Workbox):**
+  - API calls: NetworkFirst, 5min cache, max 50 entries
+  - Images (png/jpg/jpeg/webp): CacheFirst, 7-day cache, max 100 entries
+  - Static assets: Auto-cached (js, css, html, svg, woff2)
+- **Manifest** (in `vite.config.ts`):
+  - name: "MacroTracker", short_name: "Macros"
+  - theme_color: #22C55E (primary green)
+  - display: standalone (hides browser UI)
+  - Icons: 192x192, 512x512 (with maskable variant for iOS)
+- **iOS Support:**
+  - Safe area CSS variables for notch/home indicator
+  - Prevents pull-to-refresh and scroll bounce
 
 **Image Handling:**
-- Compress before upload (target <2MB)
-- Unique filenames: `${userId}/${timestamp}-${random}.jpg`
-- Upload to Storage, store path in database, not base64
+- **Dual-file upload strategy:**
+  - Full image: Compressed to ~1MB, max 1920px dimension
+  - Thumbnail: 400px max dimension, ~100KB, quality 0.85
+- Unique filenames: `${userId}/${timestamp}-${random}.jpg` (thumbnail has `_thumb` suffix)
+- Upload both to Storage, store paths in database (not base64 or URLs)
+- **Signed URL generation:**
+  - 1-hour expiry for security
+  - Generated in `useMeals()` hook
+  - Cached in state to avoid redundant API calls
+  - Separate cache control: full images 1hr, thumbnails 24hr
 
 ## AI Integration Notes
 
-**Gemini API Integration:**
-- Gemini returns complete nutrition data (no external database lookups needed)
+**AI Provider Strategy:**
+- **Primary:** Gemini 2.5 Flash Lite (`gemini-2.5-flash-lite`)
+  - Cost-effective, fast inference (~1-2 seconds)
+  - Uses response schema for structured output
+- **Fallback:** OpenAI GPT-4o Mini (`gpt-4o-mini`)
+  - Activates if Gemini API fails
+  - Uses json_schema strict mode for structured output
+- Both models return complete nutrition data (no external database lookups needed)
 - Single API call per meal (food identification + nutrition + OCR in one request)
-- Structured JSON output via prompt engineering
-- API key stored in Supabase Edge Function secrets (not in code)
+- API keys stored in Supabase Edge Function secrets (not in code)
+
+**User Context Input:**
+- Optional text input on LogMealPage (e.g., "fried chicken", "grilled salmon")
+- Helps AI with cooking method detection and variant identification
+- Sanitized for prompt injection patterns before sending to AI
+- Field is optional - works without user input
 
 **Scale Reading:**
-- OCR extracts weight from scale display in photo
-- Falls back to manual entry if OCR fails
-- Scale usage is optional (app works without scale, just lower accuracy)
+- OCR extracts weight from scale display in photo when `useScale: true`
+- Falls back to AI portion estimation if scale not detected
+- Returns `scaleDetected: boolean` and optional `scaleWeight: number`
+- Scale usage is completely optional (app works without scale, just lower accuracy)
+
+## Macro Calculation Algorithm
+
+**Onboarding uses Mifflin-St Jeor equation for BMR/TDEE:**
+
+```typescript
+// Located in: utils/macroCalculations.ts
+
+// 1. Calculate Basal Metabolic Rate (BMR)
+BMR = 10 * weight_kg + 6.25 * height_cm - 5 * age + sex_offset
+// sex_offset: +5 for male, -161 for female
+
+// 2. Calculate Total Daily Energy Expenditure (TDEE)
+TDEE = BMR * activity_multiplier
+// activity_multipliers:
+// - sedentary: 1.2
+// - light: 1.375
+// - moderate: 1.55
+// - active: 1.725
+
+// 3. Adjust for goal
+target_calories = TDEE + goal_adjustment
+// goal_adjustments:
+// - lose: -500 cal
+// - maintain: 0 cal
+// - gain: +500 cal
+
+// 4. Calculate macros
+protein_g = (target_calories * protein_bias) / 4
+fat_g = (target_calories * 0.25) / 9
+carbs_g = (target_calories - protein_cal - fat_cal) / 4
+fiber_g = (target_calories / 1000) * 12
+
+// protein_bias: 0.25-0.35 (default: 0.30)
+// Adjustable via slider in OnboardingGoalsPage
+```
+
+**Default Goals (if not set):**
+- 2000 calories
+- 150g protein
+- 250g carbs
+- 65g fat
+- 30g fiber
 
 ## Testing & Verification
 
 **Manual Testing Checklist:**
 - Unauthenticated access redirects to `/login`
 - Signup creates user, shows email confirmation message
-- Login redirects to HomePage
+- **New users forced to onboarding flow:**
+  - OnboardingGoalsPage shows (no daily_goal record)
+  - Recommended mode calculates BMR/TDEE correctly
+  - Manual mode accepts direct macro entry
+  - After goals saved, redirected to HowItWorks page
+- Login redirects to HomePage (or onboarding if new user)
 - Session persists across page refreshes
 - Sign out redirects to `/login`
 - Protected routes require authentication
 - Photo upload + AI analysis returns food data
+- **Meal editing:**
+  - Click meal card opens ConfirmMealPage in edit mode
+  - Can add/remove/edit food items
+  - Updates persist to database
+- **Swipe-to-delete:**
+  - Swipe left on MealCard triggers delete
+  - Optimistic UI update (reverts on error)
 - Meal save associates with correct user_id
-- Daily totals calculate correctly
+- Daily totals calculate correctly (including fiber)
 - Goals persist to database
+- **Dark mode toggle:**
+  - Settings page has theme toggle
+  - Preference persists to localStorage
+  - Theme applies across all pages
 
 **Build Verification:**
 ```bash
@@ -275,6 +469,14 @@ npm run lint   # Must pass ESLint checks
 - Display user-friendly error messages in Card with red background
 - Console.error for debugging but don't expose technical details to users
 - Graceful degradation (empty states, default values)
+- **Error Categorization** (utils/errors.ts):
+  - ErrorCategory enum: AUTH, VALIDATION, NETWORK, API, STORAGE, UNKNOWN
+  - `parseSupabaseFunctionError()` extracts structured errors from Edge Functions
+  - Maps error codes to categories, determines if retryable
+- **Edge Function Errors** (supabase/functions/_shared/errors.ts):
+  - ApiError class with ErrorCode enum
+  - Error codes: MISSING_AUTH, INVALID_AUTH, VALIDATION_ERROR, MISSING_CONFIG, EXTERNAL_API_ERROR, DATABASE_ERROR, INTERNAL_ERROR
+  - Returns JSON with CORS headers: `{error: {code, message, details}, requestId}`
 
 **Form Patterns:**
 - Controlled inputs (value + onChange)
@@ -299,8 +501,16 @@ This project follows a **learning-first approach** (see PRD.md). When implementi
 ## File Locations Reference
 
 - **Auth:** `contexts/AuthContext.tsx`, `hooks/useSession.ts`, `components/auth/ProtectedRoute.tsx`
-- **Data Hooks:** `hooks/useMeals.ts`, `hooks/useGoals.ts`
+- **Theme:** `contexts/ThemeContext.tsx`
+- **Data Hooks:** `hooks/useMeals.ts`, `hooks/useGoals.ts`, `hooks/useLocalStorage.ts`
+- **Onboarding:** `pages/onboarding/OnboardingGoalsPage.tsx`, `OnboardingHowItWorksPage.tsx`, `OnboardingFirstMealPage.tsx`
+- **Main Pages:** `pages/HomePage.tsx`, `LogMealPage.tsx`, `ConfirmMealPage.tsx`, `HistoryPage.tsx`, `GoalsPage.tsx`, `SettingsPage.tsx`
 - **Edge Functions:** `../supabase/functions/analyze-meal/`, `../supabase/functions/save-meal/`
-- **Migrations:** `../supabase/migrations/00001_create_schema.sql`
+- **Shared Edge Utils:** `../supabase/functions/_shared/env.ts`, `errors.ts`, `logger.ts`, `meal-schema.ts`
+- **Migrations:**
+  - `../supabase/migrations/00001_create_schema.sql`
+  - `../supabase/migrations/00002_add_photo_path.sql`
+  - `../supabase/migrations/00003_add_thumbnail_path.sql`
 - **Supabase Client:** `services/supabase.ts`
+- **Utils:** `utils/imageUtils.ts`, `utils/macroCalculations.ts`, `utils/errors.ts`, `utils/logger.ts`
 - **Design System:** `index.css` (theme tokens), `components/ui/*`

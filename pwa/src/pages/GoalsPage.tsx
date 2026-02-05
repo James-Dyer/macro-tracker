@@ -1,6 +1,6 @@
 import { Typography, Card, Button, Input } from '../components/ui';
 import { useState, useEffect } from 'react';
-import { useGoals } from '../hooks/useGoals';
+import { useCachedGoals } from '../hooks/useCachedGoals';
 
 /**
  * GoalsPage - Daily macro goals management
@@ -11,7 +11,7 @@ import { useGoals } from '../hooks/useGoals';
  */
 
 export function GoalsPage() {
-  const { goals, loading, saveGoals } = useGoals();
+  const { goals, loading, saveGoals } = useCachedGoals();
   const [isSaving, setIsSaving] = useState(false);
 
   // Form state initialized from goals

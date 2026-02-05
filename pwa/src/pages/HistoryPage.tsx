@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Typography, MealCard, Card, SwipeableCard } from '../components/ui';
-import { useMeals } from '../hooks/useMeals';
+import { useCachedMeals } from '../hooks/useCachedMeals';
 import type { Meal } from '../hooks/useMeals';
 
 /**
@@ -9,7 +9,7 @@ import type { Meal } from '../hooks/useMeals';
 
 export function HistoryPage() {
   const navigate = useNavigate();
-  const { meals, loading, error, calculateDailyTotals, deleteMeal } = useMeals();
+  const { meals, loading, error, calculateDailyTotals, deleteMeal } = useCachedMeals();
 
   // Group meals by date
   const mealsByDate = meals.reduce((groups, meal) => {

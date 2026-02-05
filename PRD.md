@@ -56,10 +56,10 @@ An AI-powered mobile app that recognizes food from photos and integrates with fo
 
 | App | Strengths | Weaknesses |
 |-----|-----------|------------|
-| **MyFitnessPal** | 18M+ food database, 97% AI accuracy, fitness integration | $19.99/mo premium, complex UI |
+| **MyFitnessPal** | 18M+ food database, AI photo recognition, fitness integration | $19.99/mo premium, complex UI |
 | **Lose It!** | Clean UI, 32M food database, $39.99/yr | Less fitness integration |
 | **Cal AI** | Depth sensor for volume estimation, simple UX | Subscription required |
-| **SnapCalorie** | LIDAR volumetric measurement, 16% error rate | iOS only, requires newer devices |
+| **SnapCalorie** | LIDAR volumetric measurement, volume-based estimation | iOS only, requires newer devices |
 
 ### Market Opportunity
 
@@ -116,8 +116,11 @@ An AI-powered mobile app that recognizes food from photos and integrates with fo
 
 | Metric | Purpose |
 |--------|---------|
-| Accuracy of scale based macros vs non-scale based macros | Significance of scale |
-| Gemini vs OpenAI | AI accracy comparison |
+| Accuracy of scale-based macros vs non-scale-based macros | Validate scale integration value proposition |
+| Gemini 2.5 Flash Lite vs GPT-4o Mini | AI accuracy comparison (currently uses Gemini primary, OpenAI fallback) |
+| Onboarding completion rate | Measure drop-off in 3-page onboarding flow |
+| Manual vs Recommended goal setup | User preference for calculated vs manual macro entry |
+| User context input usage | % of meals with user-provided cooking context |
 
 ### Scale Usage Protocol
 
@@ -128,6 +131,92 @@ An AI-powered mobile app that recognizes food from photos and integrates with fo
 5. If scale display is obscured by plate, user can manually enter weight
 
 **Fallback:** If weight cannot be determined, app prompts for manual weight entry but never blocks logging.
+
+### Onboarding Flow (New Users)
+
+**Design Principle:** Guide new users through essential setup while explaining value proposition.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  User signs up and logs in                              │
+└─────────────────┬───────────────────────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────────────────────┐
+│  OnboardingGoalsPage - Set daily macro goals            │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │ RECOMMENDED MODE (default)                        │  │
+│  │ - Enter: age, sex, weight, height                 │  │
+│  │ - Select: goal (lose/maintain/gain weight)        │  │
+│  │ - Select: activity level                          │  │
+│  │ - Adjust: protein bias slider (0.25-0.35)         │  │
+│  │ → Calculates BMR/TDEE (Mifflin-St Jeor equation)  │  │
+│  │ → Shows live preview of calculated macros         │  │
+│  └───────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │ MANUAL MODE (alternative)                         │  │
+│  │ - Enter calories, protein, carbs, fat, fiber      │  │
+│  │ - For users who already know their targets        │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────┬───────────────────────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────────────────────┐
+│  OnboardingHowItWorksPage - App walkthrough             │
+│  - Explains photo-based tracking                        │
+│  - Shows scale integration benefits                     │
+│  - Demonstrates macro tracking UI                       │
+└─────────────────┬───────────────────────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────────────────────┐
+│  OnboardingFirstMealPage - Guided first meal            │
+│  - Prompts user to log first meal                       │
+│  - Shows example of good photo                          │
+│  - Explains confirmation/editing flow                   │
+└─────────────────┬───────────────────────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────────────────────┐
+│  HomePage - User enters main app                        │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Onboarding Completion Check:**
+- Checks if user has `daily_goal` record in database
+- New users without goals are redirected to onboarding automatically
+- `ProtectedRoute` component enforces this redirect
+- After onboarding, users can update goals anytime from GoalsPage
+
+**BMR/TDEE Calculation Details:**
+```
+BMR (Mifflin-St Jeor):
+  BMR = 10 * weight_kg + 6.25 * height_cm - 5 * age + sex_offset
+  sex_offset: +5 (male), -161 (female)
+
+TDEE (Total Daily Energy Expenditure):
+  TDEE = BMR * activity_multiplier
+  activity_multipliers:
+    - Sedentary (little/no exercise): 1.2
+    - Lightly active (1-3 days/week): 1.375
+    - Moderately active (3-5 days/week): 1.55
+    - Very active (6-7 days/week): 1.725
+
+Goal Adjustment:
+  target_calories = TDEE + goal_adjustment
+  goal_adjustments:
+    - Lose weight: -500 cal
+    - Maintain weight: 0 cal
+    - Gain weight: +500 cal
+
+Macro Distribution:
+  protein_g = (target_calories * protein_bias) / 4
+  fat_g = (target_calories * 0.25) / 9
+  carbs_g = (remaining_calories_after_protein_and_fat) / 4
+  fiber_g = (target_calories / 1000) * 12
+
+  protein_bias: User-adjustable slider (0.25-0.35, default 0.30)
+```
 
 ---
 
@@ -153,18 +242,20 @@ An AI-powered mobile app that recognizes food from photos and integrates with fo
 
 ### AI/Vision API Options
 
-| Criteria | Google Gemini Pro Vision | OpenAI GPT-4V |
-|----------|-------------------------|---------------|
+| Criteria | Google Gemini 2.5 Flash Lite | OpenAI GPT-4o Mini |
+|----------|------------------------------|-------------------|
 | Food ID accuracy | Strong | Strong |
 | OCR (scale reading) | Native support | Native support |
-| Nutrition estimation | Strong (trained on USDA data) | Strong (trained on USDA data) |
+| Nutrition estimation | Strong (trained on nutrition data) | Strong (trained on nutrition data) |
 | Single API call | Yes - complete meal analysis | Yes - complete meal analysis |
 | Free tier | Generous (60 req/min) | Limited |
 | Pricing | $0.0025/image | $0.01-0.03/image |
 | Latency | ~1-2 seconds | ~2-4 seconds |
-| Structured output | JSON mode available | JSON mode available |
+| Structured output | Response schema | JSON schema (strict mode) |
 
-**Strategy:** Build an abstraction layer to support both providers. Start with Gemini (cost-effective), validate accuracy, A/B test with GPT-4V if needed, implement fallback logic for reliability.
+**Strategy:** Build an abstraction layer to support both providers. Start with Gemini 2.5 Flash Lite (cost-effective), validate accuracy, fallback to GPT-4o Mini if Gemini API fails, implement robust error handling for reliability.
+
+**Current Implementation:** Edge function tries Gemini first, automatically falls back to OpenAI on failure.
 
 **Nutrition Data Approach:** AI models return complete nutrition data (calories, protein, carbs, fat, fiber) based on food identification and weight estimation. This eliminates the need for external nutrition databases and keeps the system simple with a single API call per meal.
 
@@ -228,14 +319,17 @@ When building each feature:
 | Feature | Description | React Concepts Learned |
 |---------|-------------|----------------------|
 | **Auth screens** | Sign up, login, password reset | useState for forms, useEffect for session check, useContext for auth state |
-| **Photo capture** | Camera/file input integration, permissions | Media capture APIs, async/await, permissions handling |
-| **AI recognition UI** | Send photo, display results | Loading states, error handling, useReducer for complex state |
-| **Confirmation/edit screen** | Review and adjust AI results | Controlled inputs, form validation, lifting state up |
-| **Meal logging** | Save meals to database | API calls with useEffect, optimistic updates, error boundaries |
-| **Daily tracking view** | Today's meals and totals | useMemo for calculations, derived state patterns |
-| **Goal setting** | Set calorie/macro targets (protein, carbs, fat, fiber) | Persistent storage, useCallback for handlers |
-| **Calendar view** | Historical meal data | List virtualization/windowing, performance optimization |
-| **Dashboard** | Progress overview | Data visualization, custom hooks for data fetching |
+| **Onboarding flow** | 3-page guided setup (goals with BMR/TDEE calc, how-it-works, first meal) | Multi-step forms, conditional routing, localStorage persistence |
+| **Photo capture** | Camera/file input with optional user context | Media capture APIs, async/await, image compression + thumbnails |
+| **AI recognition UI** | Send photo, display results with provider fallback | Loading states, error handling, Gemini → OpenAI fallback |
+| **Confirmation/edit screen** | Review/adjust AI results OR edit existing meals | Dual-mode component, controlled inputs, CRUD operations |
+| **Meal logging** | Save meals with photo + thumbnail to Storage | API calls, optimistic updates, dual-file uploads, signed URLs |
+| **Meal editing** | Edit saved meals (add/remove/update food items) | Update transactions, optimistic UI, swipe-to-delete gestures |
+| **Daily tracking view** | Today's meals with swipe-to-delete | useMemo for calculations, gesture handling, optimistic deletes |
+| **Goal setting** | Set calorie/macro targets (calculated or manual entry) | BMR/TDEE calculator (Mifflin-St Jeor), slider controls, form validation |
+| **Calendar view** | Historical meals grouped by date | Date grouping, signed URL caching, list performance |
+| **Dashboard** | Daily progress with circular macro rings | Data visualization, progress indicators, custom hooks |
+| **Dark mode** | System-wide theme toggle with persistence | useContext for theme, localStorage, CSS variables |
 
 ### Build Order (Pedagogical Sequence)
 
@@ -275,35 +369,46 @@ created_at: timestamp
 ### DailyGoal
 ```
 id: uuid (primary key)
-user_id: uuid (foreign key → User)
+user_id: uuid (foreign key → User, UNIQUE - one goal per user)
 calories: integer
 protein: integer (grams)
 carbs: integer (grams)
 fat: integer (grams)
 fiber: integer (grams)
+created_at: timestamp
+updated_at: timestamp
 ```
+
+**Note:** Onboarding uses BMR/TDEE calculations (Mifflin-St Jeor equation) for "Recommended" mode. Users can also enter goals manually.
 
 ### Meal
 ```
 id: uuid (primary key)
 user_id: uuid (foreign key → User)
 timestamp: timestamp
-photo_url: string
-notes: string (optional)
+photo_url: string (DEPRECATED - legacy public URLs)
+photo_path: string (Storage path for full image, requires signed URL)
+thumbnail_path: string (Storage path for thumbnail, ~100KB, 400px)
+notes: string (optional user context for AI, e.g., "fried chicken")
+created_at: timestamp
 ```
+
+**Note:** App uses `photo_path` and `thumbnail_path` with 1-hour signed URLs for security. Legacy `photo_url` field retained for backward compatibility but not used in new meals.
 
 ### FoodItem
 ```
 id: uuid (primary key)
 meal_id: uuid (foreign key → Meal)
 name: string
-weight_g: integer
+weight_g: integer (rounded from AI estimate)
 calories: integer
-protein: float (grams)
-carbs: float (grams)
-fat: float (grams)
-fiber: float (grams)
+protein: numeric(5,2) (grams, rounded to 0.1g)
+carbs: numeric(5,2) (grams, rounded to 0.1g)
+fat: numeric(5,2) (grams, rounded to 0.1g)
+fiber: numeric(5,2) (grams, rounded to 0.1g)
 ```
+
+**Note:** AI provides nutrition estimates. Users can manually edit any value in ConfirmMealPage before saving.
 
 *Note: Daily totals are computed on read from FoodItems. No denormalized summary table needed at MVP scale (~15 rows/day; aggregation is instant).*
 
@@ -373,27 +478,37 @@ fiber: float (grams)
 
 ## 11. Timeline & Milestones
 
-### Phase 1: Core MVP
-- Authentication (sign up, login, logout)
-- Photo capture and camera permissions
-- AI food recognition integration
-- Basic meal logging and confirmation flow
+### Phase 1: Core MVP ✅ COMPLETED
+- ✅ Authentication (sign up, login, logout)
+- ✅ Onboarding flow (3-page guided setup with BMR/TDEE calculator)
+- ✅ Photo capture with compression and thumbnail generation
+- ✅ AI food recognition (Gemini + OpenAI fallback)
+- ✅ Meal logging with confirmation/edit flow
+- ✅ Meal editing (add/remove/update food items)
+- ✅ Swipe-to-delete gestures
 
-### Phase 2: Tracking & Goals
-- Calendar view for historical data
-- Goal setting and daily progress
-- Dashboard with summary stats
+### Phase 2: Tracking & Goals ✅ COMPLETED
+- ✅ Calendar view (historical meals grouped by date)
+- ✅ Goal setting (calculated via BMR/TDEE or manual entry)
+- ✅ Dashboard with circular macro progress rings
+- ✅ Daily totals calculation
+- ✅ Dark mode theme toggle
 
-### Phase 3: Polish & Testing
-- Performance optimization
-- Error handling and edge cases
-- Beta testing with real users
-- Bug fixes and refinements
+### Phase 3: Polish & Testing 🔄 IN PROGRESS
+- ✅ Performance optimization (image compression, thumbnail caching, signed URL caching)
+- ✅ Error handling with categorization (ErrorCategory enum)
+- ⏳ Known issues (see TODO.md):
+  - Security: Validate photoPath belongs to user
+  - Edge case: Handle empty foods array from AI
+- ⏳ Beta testing with real users
+- ⏳ Bug fixes and refinements
 
-### Phase 4: Launch
-- App store submission (iOS and Android)
-- Marketing site
-- Support documentation
+### Phase 4: Launch ⏳ NOT STARTED
+- ⏳ App store submission (iOS and Android)
+- ⏳ Marketing site (LandingPage exists but not deployed)
+- ⏳ Support documentation
+- ⏳ Analytics integration (Google Analytics/Plausible)
+- ⏳ Error tracking (Sentry/LogRocket)
 
 ---
 
@@ -415,12 +530,18 @@ fiber: float (grams)
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Framework | React PWA (Vite + Tailwind) | Installable web app with familiar React patterns, minimal deployment friction |
-| Scale Requirement | Flexible (scale-first default) | Hypothesis to validate via analytics |
-| AI Service | Abstraction layer, start with Gemini | Cost-effective, test and compare |
+| Framework | React 19 PWA (Vite 7.2.4 + Tailwind v4) | Installable web app with familiar React patterns, minimal deployment friction |
+| Scale Requirement | Optional (scale-first default) | Hypothesis to validate via analytics; never blocks logging |
+| AI Service | Gemini 2.5 Flash Lite (primary) + GPT-4o Mini (fallback) | Cost-effective, automatic failover for reliability |
 | Backend | Supabase | Full-featured, open-source, predictable pricing |
-| Payments | RevenueCat + Stripe | Cross-platform subscriptions with web billing option |
+| Storage Strategy | Dual-file (full + thumbnail) with signed URLs | Security (RLS) + performance (mobile optimization) |
+| Onboarding | BMR/TDEE calculator (Mifflin-St Jeor) + manual option | Personalized recommendations vs user control |
+| Payments | RevenueCat + Stripe | Cross-platform subscriptions with web billing option (not yet implemented) |
 | Development Approach | Learning-first, instructional | Master fundamentals, not just ship code |
+| Theme System | Dark/light mode with localStorage persistence | User preference, modern UX expectation |
+| Navigation | 5-item BottomNav (Home, History, Log, Goals, More) | Logical grouping, center FAB for primary action |
 | Fiber tracking | Yes, MVP | Important for digestive health, commonly requested |
+| Meal editing | Yes, MVP | Users need ability to correct AI mistakes post-save |
 | Manual entry | Post-MVP | Keep MVP focused on AI photo differentiator |
 | Daily totals | Computed on read | ~15 rows/day; aggregation is instant; avoids derived data complexity |
+| Image compression | Client-side (browser-image-compression) | Reduces upload time, server costs, storage costs |
