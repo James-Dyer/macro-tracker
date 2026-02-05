@@ -198,7 +198,7 @@ export function SwipeableCard({
           transform: `translateX(${-swipeX}px)`,
           transition: isSwiping ? "none" : "transform 0.3s ease-out",
         }}
-        className="--bg-primary"
+        className="bg-app"
       >
         {children}
       </div>
