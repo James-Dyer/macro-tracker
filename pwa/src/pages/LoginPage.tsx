@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Typography, Button, Input, Card } from '../components/ui';
+import { useInviteRedemption } from '../hooks/useInviteRedemption';
 
 type AuthMode = 'login' | 'signup';
 
@@ -14,14 +15,62 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [inviteValidating, setInviteValidating] = useState(false);
+  const { redeemInvite, error: redemptionError } = useInviteRedemption();
 
-  // Check for mode query parameter (e.g., ?mode=signup)
+  // Check for invite code and mode query parameters
   useEffect(() => {
     const modeParam = searchParams.get('mode');
+    const inviteParam = searchParams.get('invite');
+
     if (modeParam === 'signup') {
       setMode('signup');
     }
+
+    // Handle invite code
+    if (inviteParam) {
+      setInviteCode(inviteParam);
+      setMode('signup'); // Auto-switch to signup mode
+      localStorage.setItem('pendingInviteCode', inviteParam); // Persist for resilience
+      validateInviteCode(inviteParam);
+    } else {
+      // Check if there's a pending code from previous visit
+      const pendingCode = localStorage.getItem('pendingInviteCode');
+      if (pendingCode) {
+        setInviteCode(pendingCode);
+      }
+    }
   }, [searchParams]);
+
+  // Validate invite code exists and is active
+  const validateInviteCode = async (code: string) => {
+    setInviteValidating(true);
+    try {
+      const { data, error: queryError } = await supabase
+        .from('invite_code')
+        .select('code, tier, status, expires_at')
+        .eq('code', code)
+        .eq('status', 'active')
+        .single();
+
+      if (queryError || !data) {
+        setError('Invalid or disabled invite code');
+        setInviteCode(null);
+        localStorage.removeItem('pendingInviteCode');
+      } else if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        setError('Invite code has expired');
+        setInviteCode(null);
+        localStorage.removeItem('pendingInviteCode');
+      } else {
+        setMessage(`You're invited to MacroTracker ${data.tier === 'beta' ? 'Beta' : 'Premium'}!`);
+      }
+    } catch (err) {
+      console.error('Error validating invite code:', err);
+    } finally {
+      setInviteValidating(false);
+    }
+  };
 
   // Handle email confirmation callback
   useEffect(() => {
@@ -42,14 +91,34 @@ export function LoginPage() {
 
     try {
       if (mode === 'signup') {
-        const { error: signUpError } = await supabase.auth.signUp({
+        // Step 1: Create user account (Supabase handles auth)
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
         });
 
         if (signUpError) throw signUpError;
 
-        setMessage('Check your email to confirm your account!');
+        const userId = signUpData.user?.id;
+
+        // Step 2: If invite code present, attempt redemption
+        if (inviteCode && userId) {
+          console.log('[LoginPage] Attempting invite redemption for:', inviteCode);
+
+          const tier = await redeemInvite(inviteCode, userId);
+
+          if (tier) {
+            // Redemption successful - remove pending code
+            localStorage.removeItem('pendingInviteCode');
+            setMessage(`Account created! You now have ${tier === 'beta' ? 'Beta' : 'Premium'} access. Check your email to confirm.`);
+          } else {
+            // Redemption failed - code stays in localStorage for auto-retry
+            setMessage('Account created! Check your email to confirm. (Invite code will be applied on first login)');
+          }
+        } else {
+          setMessage('Check your email to confirm your account!');
+        }
+
         setEmail('');
         setPassword('');
         setMode('login');
@@ -130,12 +199,32 @@ export function LoginPage() {
             )}
 
             {/* Error Message */}
-            {error && (
+            {(error || redemptionError) && (
               <Card variant="filled" padding="md" className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
                 <Typography variant="bodySmall" className="text-red-700 dark:text-red-400">
-                  {error}
+                  {error || redemptionError}
                 </Typography>
               </Card>
+            )}
+
+            {/* Invite Code Display */}
+            {inviteCode && mode === 'signup' && (
+              <div>
+                <Typography variant="label" className="mb-2 block text-gray-700 dark:text-gray-300">
+                  Invite Code
+                </Typography>
+                <Input
+                  type="text"
+                  value={inviteCode}
+                  readOnly
+                  disabled={inviteValidating}
+                />
+                {inviteValidating && (
+                  <Typography variant="caption" color="tertiary" className="mt-1 block">
+                    Validating code...
+                  </Typography>
+                )}
+              </div>
             )}
 
             {/* Email Input */}

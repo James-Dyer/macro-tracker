@@ -6,4 +6,4 @@ ALTER TABLE meal ADD COLUMN photo_path TEXT;
 CREATE INDEX idx_meal_photo_path ON meal(photo_path) WHERE photo_path IS NOT NULL;
 
 -- Mark photo_url as deprecated (can drop later after migration)
-COMMENT ON COLUMN meal.photo_url IS 'DEPRECATED: Use photo_path instead. Contains legacy public URLs.';
+COMMENT ON COLUMN meal.photo_url IS 'DEPRECATED: Use photo_path instead. Contains legacy public URLs.';;
