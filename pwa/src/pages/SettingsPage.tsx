@@ -18,7 +18,7 @@ import { useAuth } from '../contexts/AuthContext';
 export function SettingsPage() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, tier } = useAuth();
   const [userEmail, setUserEmail] = useState<string>('');
   const [cacheStats, setCacheStats] = useState({ totalCaches: 0, expiredCaches: 0, cacheSizeBytes: 0 });
   const [isClearing, setIsClearing] = useState(false);
@@ -133,11 +133,18 @@ export function SettingsPage() {
               <Typography variant="label" color="secondary" className="mb-2 block">
                 Email Address
               </Typography>
-              <div className="px-4 py-3 bg-tertiary rounded-lg border border-themed">
-                <Typography variant="body" className="font-mono text-sm">
-                  {userEmail}
-                </Typography>
-              </div>
+              <Typography variant="body" className="font-mono">
+                {userEmail}
+              </Typography>
+            </div>
+
+            <div>
+              <Typography variant="label" color="secondary" className="mb-2 block">
+                Account Status
+              </Typography>
+              <Typography variant="body" className="capitalize">
+                {tier}
+              </Typography>
             </div>
 
             <Button

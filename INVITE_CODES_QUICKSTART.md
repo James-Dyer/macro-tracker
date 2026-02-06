@@ -66,7 +66,7 @@ ORDER BY ic.created_at DESC;
 
 **Format:**
 ```
-https://macrotracker.app/login?invite=BETA-abc12345
+http://localhost:5173/login?invite=BETA-abc12345
 ```
 
 **What happens when user clicks:**
