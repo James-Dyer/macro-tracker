@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**MacroTracker** is an AI-powered PWA for tracking nutrition via food photos. Users photograph meals on a food scale, and the app uses AI vision to identify foods, read scale weight via OCR, and calculate complete nutrition data (calories, protein, carbs, fat, fiber).
+**MacroTracker** is an AI-powered PWA for tracking nutrition via food photos. Users take a single photo of their meal, and the app instantly identifies foods, estimates portions, and calculates complete nutrition data (calories, protein, carbs, fat, fiber)—all in seconds.
 
 **Tech Stack:**
 - **Frontend:** React 19 + TypeScript PWA (Vite 7.2.4 + Tailwind v4)
@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **AI:** Google Gemini 2.5 Flash Lite (primary) with OpenAI GPT-4o Mini fallback
 - **Deployment:** Progressive Web App (installable, offline-capable)
 
-**Key Differentiator:** Food scale integration for weight-based accuracy (vs. volume estimation competitors).
+**Key Differentiator:** One-photo simplicity. No equipment, no manual entry—just snap and track.
 
 ## Development Commands
 
@@ -125,7 +125,7 @@ pwa/src/
 - `analyze-meal` - Takes photo path in Storage, optional user context (e.g., "fried chicken")
   - Downloads image with service role key
   - Calls Gemini 2.5 Flash Lite (primary) or GPT-4o Mini (fallback)
-  - Returns food recognition + nutrition data + optional scale weight (OCR)
+  - Returns food recognition + portion estimates + complete nutrition data
   - Sanitizes user context to prevent prompt injection
 - `save-meal` - Accepts food items array, timestamp, photo paths (full + thumbnail)
   - Inserts meal + food_items with proper user_id association
@@ -373,11 +373,11 @@ if (!envValidation.valid) {
 - Sanitized for prompt injection patterns before sending to AI
 - Field is optional - works without user input
 
-**Scale Reading:**
-- OCR extracts weight from scale display in photo when `useScale: true`
-- Falls back to AI portion estimation if scale not detected
-- Returns `scaleDetected: boolean` and optional `scaleWeight: number`
-- Scale usage is completely optional (app works without scale, just lower accuracy)
+**Portion Estimation:**
+- AI analyzes visual cues (plate size, food volume, typical serving sizes)
+- Estimates weight/portion for each identified food item
+- Returns confidence scores to indicate estimation reliability
+- Users can always adjust portions in confirmation screen
 
 ## Macro Calculation Algorithm
 

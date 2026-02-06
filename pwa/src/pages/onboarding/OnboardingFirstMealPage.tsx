@@ -46,7 +46,7 @@ export function OnboardingFirstMealPage() {
           </Typography>
 
           <Typography variant="body" color="secondary" className="mb-8">
-            Photograph your next meal on a food scale, and we'll help you track the nutrition automatically.
+            Take a quick photo of your next meal, and we'll track the nutrition automatically—no typing, no searching, no equipment needed.
           </Typography>
 
           <div className="space-y-4 mb-6">
@@ -63,7 +63,7 @@ export function OnboardingFirstMealPage() {
                 ✓
               </div>
               <Typography variant="bodySmall" color="secondary">
-                Automatic weight reading from your digital scale
+                Instant food identification and portion estimates
               </Typography>
             </div>
             <div className="flex items-start gap-3 text-left">
@@ -71,7 +71,7 @@ export function OnboardingFirstMealPage() {
                 ✓
               </div>
               <Typography variant="bodySmall" color="secondary">
-                Complete nutrition breakdown in seconds
+                Complete nutrition breakdown in under 10 seconds
               </Typography>
             </div>
           </div>

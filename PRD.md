@@ -28,11 +28,11 @@
 
 | Name | Rationale |
 |------|-----------|
-| **ScaleSmart** | Emphasizes the scale differentiator + AI intelligence |
 | **MacroSnap** | Action-oriented, quick photo = macro data |
-| **PlateWeight** | Literal - what's on your plate + weight |
+| **SnapTrack** | Instant tracking with a snap |
 | **BiteMath** | Clever - the math of every bite |
-| **GramWise** | Grams (weight) + wise (smart tracking) |
+| **QuickMacro** | Emphasizes speed and simplicity |
+| **FotoFit** | Photo-based fitness tracking |
 
 *Final selection pending trademark and app store availability verification*
 
@@ -42,11 +42,11 @@ Manual calorie and macro tracking is tedious and error-prone. Users must search 
 
 ### Solution
 
-An AI-powered mobile app that recognizes food from photos and integrates with food scales for accurate weight measurement. Users take a single photo of their meal on a scale, and the app automatically identifies foods, reads the weight, and calculates calories and macros.
+An AI-powered mobile app that recognizes food from photos with instant, accurate results. Users take a single photo of their meal, and the app automatically identifies foods, estimates portions, and calculates calories and macros—all in seconds.
 
 ### Key Differentiator
 
-**Food scale integration.** While competitors rely on volume estimation (often 15-30% error), our app combines AI food recognition with actual weight measurement for significantly improved accuracy.
+**One-photo simplicity.** While competitors require expensive subscriptions, tedious database searches or complex measurement setups, our app delivers complete nutrition tracking in seconds with just a single photo. No equipment needed, no manual entry—just snap and track.
 
 ---
 
@@ -63,10 +63,9 @@ An AI-powered mobile app that recognizes food from photos and integrates with fo
 
 ### Market Opportunity
 
-- No major app combines food scale weight + AI recognition
-- Scale integration significantly improves accuracy over volume estimation
-- Opportunity to undercut premium pricing while offering superior accuracy
-- Growing health-conscious consumer base seeking accurate tracking tools
+- Competing photo-based apps are expensive ($20/mo) or require specialized hardware
+- Opportunity to provide fastest, simplest tracking experience at competitive pricing
+- Growing health-conscious consumer base seeking effortless tracking tools
 
 ---
 
@@ -74,63 +73,45 @@ An AI-powered mobile app that recognizes food from photos and integrates with fo
 
 ### Core Hypothesis
 
-> Scale-based tracking is more accurate, but we need to validate whether users value accuracy enough to adopt the extra step. Design for flexibility, measure outcomes, iterate.
+> Users will adopt macro tracking if it's effortless. By eliminating manual entry and equipment requirements, we can dramatically reduce friction and increase daily engagement.
 
-> **Design Principle:** Never block logging. Accuracy degrades gracefully—a logged meal with estimated data is better than an abandoned meal.
+> **Design Principle:** Never block logging. Speed and simplicity are the priority—a logged meal with AI estimates is infinitely better than an abandoned meal.
 
-### Adaptive User Flow (Scale-First Default)
+### Simple User Flow (Photo-First)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  User takes photo of meal                               │
+│  User takes photo of meal (< 5 seconds)                 │
 └─────────────────┬───────────────────────────────────────┘
                   │
                   ▼
 ┌─────────────────────────────────────────────────────────┐
-│  AI analyzes image                                      │
-│  - Identifies food items                                │
-│  - Detects if scale is visible                          │
+│  AI analyzes image instantly                            │
+│  - Identifies all food items                            │
+│  - Estimates portion sizes                              │
+│  - Calculates complete nutrition data                   │
 └─────────────────┬───────────────────────────────────────┘
                   │
-        ┌─────────┴─────────┐
-        ▼                   ▼
-┌───────────────┐   ┌───────────────────────────────────┐
-│ Scale detected│   │ No scale detected                 │
-│ → Read weight │   │ → AI estimates portion            │
-│ → High conf.  │   │ → Show confidence score           │
-└───────┬───────┘   │ → Prompt: "Add scale for better   │
-        │           │   accuracy" (non-blocking)        │
-        │           └─────────────────┬─────────────────┘
-        │                             │
-        └──────────┬──────────────────┘
-                   ▼
+                  ▼
 ┌─────────────────────────────────────────────────────────┐
-│  Confirmation screen                                    │
-│  - User can adjust food items, weights                  │
-│  - Shows calories/macros                                │
-│  - Save to log                                          │
+│  Confirmation screen (< 2 seconds)                      │
+│  - Shows identified foods with macros                   │
+│  - User can adjust portions or add/remove items         │
+│  - Tap "Save" to complete (total time: < 10 seconds)   │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Analytics for Hypothesis Validation
+### Analytics for Product Validation
 
 | Metric | Purpose |
 |--------|---------|
-| Accuracy of scale-based macros vs non-scale-based macros | Validate scale integration value proposition |
+| Time to log meal (photo to save) | Validate speed/simplicity value proposition |
+| AI food identification accuracy | Track improvement in recognition quality |
 | Gemini 2.5 Flash Lite vs GPT-4o Mini | AI accuracy comparison (currently uses Gemini primary, OpenAI fallback) |
 | Onboarding completion rate | Measure drop-off in 3-page onboarding flow |
 | Manual vs Recommended goal setup | User preference for calculated vs manual macro entry |
 | User context input usage | % of meals with user-provided cooking context |
-
-### Scale Usage Protocol
-
-1. User zeros the scale with empty plate
-2. Places food on plate, plate on scale
-3. Takes photo showing both plate and scale display
-4. AI reads weight from scale display in photo
-5. If scale display is obscured by plate, user can manually enter weight
-
-**Fallback:** If weight cannot be determined, app prompts for manual weight entry but never blocks logging.
+| Zero-edit meal saves | % of meals saved without user corrections |
 
 ### Onboarding Flow (New Users)
 
@@ -163,8 +144,8 @@ An AI-powered mobile app that recognizes food from photos and integrates with fo
                   ▼
 ┌─────────────────────────────────────────────────────────┐
 │  OnboardingHowItWorksPage - App walkthrough             │
-│  - Explains photo-based tracking                        │
-│  - Shows scale integration benefits                     │
+│  - Explains instant photo-based tracking                │
+│  - Shows one-photo simplicity and speed                 │
 │  - Demonstrates macro tracking UI                       │
 └─────────────────┬───────────────────────────────────────┘
                   │
@@ -245,7 +226,7 @@ Macro Distribution:
 | Criteria | Google Gemini 2.5 Flash Lite | OpenAI GPT-4o Mini |
 |----------|------------------------------|-------------------|
 | Food ID accuracy | Strong | Strong |
-| OCR (scale reading) | Native support | Native support |
+| Portion estimation | Strong (visual analysis) | Strong (visual analysis) |
 | Nutrition estimation | Strong (trained on nutrition data) | Strong (trained on nutrition data) |
 | Single API call | Yes - complete meal analysis | Yes - complete meal analysis |
 | Free tier | Generous (60 req/min) | Limited |
@@ -467,9 +448,9 @@ fiber: numeric(5,2) (grams, rounded to 0.1g)
 | Food identification accuracy | > 90% (correct food type) |
 | Ingredient granularity accuracy | > 75% (specific variant vs generic) |
 | Cooking method detection | > 70% (fried/baked/steamed) |
-| Scale weight OCR accuracy | > 95% (when scale visible) |
-| Zero-correction rate (all factors) | > 60% (no user edits needed) |
-| Scale usage rate | Track for hypothesis validation |
+| Portion estimation accuracy | > 70% (within 20% of actual) |
+| Zero-correction rate | > 60% (no user edits needed) |
+| Average time to log meal | < 10 seconds (photo to save) |
 | Subscription conversion rate | 2-5% of active users |
 
 *Note: Initial conversion typically 1-3%. Higher rates require obvious accuracy advantage, scan limit friction, and clear value messaging before paywall.*
@@ -516,12 +497,12 @@ fiber: numeric(5,2) (grams, rounded to 0.1g)
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Scale UX adoption | Users may skip scale step | Non-blocking; track usage analytics |
-| AI misclassification trust erosion | Users lose confidence after errors | Always allow corrections; show confidence scores |
-| AI nutrition estimation variance | Estimated macros may vary from USDA values | Allow user corrections; show confidence scores; consider future DB integration |
-| Lighting/plating variance | Poor photos reduce accuracy | Provide photo tips; graceful degradation |
+| AI misclassification trust erosion | Users lose confidence after errors | Always allow corrections; improve AI over time with user feedback |
+| Portion estimation variance | AI estimates may differ from actual portions | Allow user corrections; show confidence scores; learn from corrections |
+| AI nutrition estimation variance | Estimated macros may vary from USDA values | Allow user corrections; consider future DB integration for common foods |
+| Lighting/plating variance | Poor photos reduce accuracy | Provide photo tips; graceful degradation; improve AI model |
 | International food coverage | Non-US foods poorly recognized | AI models trained on diverse datasets; improve over time |
-| Weight reading failures | Scale obscured or unreadable | Manual weight entry fallback |
+| User perception of accuracy | Users may doubt AI estimates | Transparent confidence scores; easy editing; educational content |
 | Cold start latency | Edge functions slow on first call | Keep functions warm; show progress indicator |
 
 ---
@@ -531,7 +512,7 @@ fiber: numeric(5,2) (grams, rounded to 0.1g)
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Framework | React 19 PWA (Vite 7.2.4 + Tailwind v4) | Installable web app with familiar React patterns, minimal deployment friction |
-| Scale Requirement | Optional (scale-first default) | Hypothesis to validate via analytics; never blocks logging |
+| Tracking Method | Photo-only (no equipment required) | Maximizes simplicity and adoption; removes all friction |
 | AI Service | Gemini 2.5 Flash Lite (primary) + GPT-4o Mini (fallback) | Cost-effective, automatic failover for reliability |
 | Backend | Supabase | Full-featured, open-source, predictable pricing |
 | Storage Strategy | Dual-file (full + thumbnail) with signed URLs | Security (RLS) + performance (mobile optimization) |

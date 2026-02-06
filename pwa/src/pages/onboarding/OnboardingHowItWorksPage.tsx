@@ -31,7 +31,7 @@ export function OnboardingHowItWorksPage() {
                   Take a Photo
                 </Typography>
                 <Typography variant="body" color="secondary">
-                  Snap a picture of your meal on a food scale. Works with plates, bowls, takeout, and home cooking.
+                  Snap a quick picture of your meal. Works with plates, bowls, takeout, and home cooking—no equipment needed.
                 </Typography>
               </div>
             </div>
@@ -45,10 +45,10 @@ export function OnboardingHowItWorksPage() {
               </div>
               <div className="flex-1">
                 <Typography variant="h3" className="mb-2 text-gray-900">
-                  AI Identifies Foods
+                  AI Analyzes Instantly
                 </Typography>
                 <Typography variant="body" color="secondary">
-                  Our AI recognizes foods, reads the scale weight, and calculates complete nutrition data automatically.
+                  Our AI recognizes foods, estimates portions, and calculates complete nutrition data automatically—all in seconds.
                 </Typography>
               </div>
             </div>
@@ -77,7 +77,7 @@ export function OnboardingHowItWorksPage() {
               <div className="text-2xl">💡</div>
               <div className="flex-1">
                 <Typography variant="bodySmall" className="text-blue-900">
-                  <strong>Pro tip:</strong> For best results, place food on a digital scale before photographing. The AI will read the weight and identify your foods for accurate tracking.
+                  <strong>Pro tip:</strong> For best results, take photos in good lighting with your food clearly visible. Top-down angles work great, and try to avoid shadows over your plate.
                 </Typography>
               </div>
             </div>

@@ -65,7 +65,7 @@ export function LandingPage() {
                   <span className="text-primary-light">with precision</span>
                 </h1>
                 <p className="text-xl text-gray-300 leading-relaxed max-w-lg">
-                  Snap a photo of your meal on a scale. AI recognizes your food, reads the weight, and calculates complete nutrition data in seconds.
+                  Take one photo of your meal. AI instantly identifies your food, estimates portions, and calculates complete nutrition data—all in seconds.
                 </p>
               </div>
 
@@ -116,15 +116,15 @@ export function LandingPage() {
               <span className="text-primary-light">Just results.</span>
             </h2>
             <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Stop estimating portions and scrolling through food databases. Get weight-based accuracy in seconds.
+              Stop estimating portions and scrolling through food databases. Get instant results with zero manual entry.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             <BenefitCard
-              icon={<ScaleIcon />}
-              title="Scale Integration"
-              description="AI reads your scale's weight display from the photo. No manual entry, no estimation errors."
+              icon={<ZapIcon />}
+              title="Instant Tracking"
+              description="One photo, complete nutrition. Log meals in under 10 seconds—no typing, no searching, no equipment."
               delay="delay-[100ms]"
             />
             <BenefitCard
@@ -136,7 +136,7 @@ export function LandingPage() {
             <BenefitCard
               icon={<ChartIcon />}
               title="Complete Data"
-              description="Calories, protein, carbs, fat, fiber—calculated from actual weight, not volume guesses."
+              description="Calories, protein, carbs, fat, fiber—calculated automatically from visual analysis, no manual entry."
               delay="delay-[300ms]"
             />
           </div>
@@ -148,7 +148,7 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Three seconds to<br />
+              Ten seconds to<br />
               <span className="text-primary-light">complete nutrition</span>
             </h2>
           </div>
@@ -156,20 +156,20 @@ export function LandingPage() {
           <div className="grid md:grid-cols-3 gap-8 md:gap-4">
             <StepCard
               number="01"
-              title="Photograph"
-              description="Place your meal on a digital scale and snap a photo"
+              title="Snap Photo"
+              description="Take a quick picture of your meal—that's it"
               delay="delay-[100ms]"
             />
             <StepCard
               number="02"
               title="AI Analyzes"
-              description="Vision AI identifies foods and reads scale weight via OCR"
+              description="Vision AI instantly identifies foods and estimates portions"
               delay="delay-[200ms]"
             />
             <StepCard
               number="03"
-              title="Track Progress"
-              description="Review complete macros and watch your daily goals update"
+              title="Done"
+              description="Review complete macros and save—all in under 10 seconds"
               delay="delay-[300ms]"
             />
           </div>
@@ -208,11 +208,11 @@ export function LandingPage() {
                 The MacroTracker Difference
               </div>
               <h2 className="text-3xl md:text-4xl font-bold leading-tight">
-                Weight-based accuracy beats<br />
-                volume estimation every time
+                One photo beats<br />
+                tedious manual entry every time
               </h2>
               <p className="text-lg text-gray-300 max-w-2xl mx-auto leading-relaxed">
-                While other apps make you guess "1 cup of rice" or "medium chicken breast," MacroTracker uses your scale's actual measurement. <span className="text-white font-semibold">150g is 150g</span>—no ambiguity, no logging errors.
+                While other apps make you search databases, type food names, and manually enter portions, MacroTracker gives you <span className="text-white font-semibold">complete nutrition in 10 seconds</span>. Just snap and track—no typing, no searching, no equipment needed.
               </p>
             </div>
           </div>
@@ -374,12 +374,10 @@ function StepCard({ number, title, description, delay }: { number: string; title
 }
 
 // Icon Components
-function ScaleIcon() {
+function ZapIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary-light">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M3 9h18" />
-      <path d="M9 21V9" />
+      <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" />
     </svg>
   );
 }
