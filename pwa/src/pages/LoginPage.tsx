@@ -16,7 +16,6 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
-  const [inviteValidating, setInviteValidating] = useState(false);
   const { redeemInvite, error: redemptionError } = useInviteRedemption();
 
   // Check for invite code and mode query parameters
@@ -33,7 +32,7 @@ export function LoginPage() {
       setInviteCode(inviteParam);
       setMode('signup'); // Auto-switch to signup mode
       localStorage.setItem('pendingInviteCode', inviteParam); // Persist for resilience
-      validateInviteCode(inviteParam);
+      setMessage(`You're invited to MacroTracker! Sign up to join.`);
     } else {
       // Check if there's a pending code from previous visit
       const pendingCode = localStorage.getItem('pendingInviteCode');
@@ -42,35 +41,6 @@ export function LoginPage() {
       }
     }
   }, [searchParams]);
-
-  // Validate invite code exists and is active
-  const validateInviteCode = async (code: string) => {
-    setInviteValidating(true);
-    try {
-      const { data, error: queryError } = await supabase
-        .from('invite_code')
-        .select('code, tier, status, expires_at')
-        .eq('code', code)
-        .eq('status', 'active')
-        .single();
-
-      if (queryError || !data) {
-        setError('Invalid or disabled invite code');
-        setInviteCode(null);
-        localStorage.removeItem('pendingInviteCode');
-      } else if (data.expires_at && new Date(data.expires_at) < new Date()) {
-        setError('Invite code has expired');
-        setInviteCode(null);
-        localStorage.removeItem('pendingInviteCode');
-      } else {
-        setMessage(`You're invited to MacroTracker ${data.tier === 'beta' ? 'Beta' : 'Premium'}!`);
-      }
-    } catch (err) {
-      console.error('Error validating invite code:', err);
-    } finally {
-      setInviteValidating(false);
-    }
-  };
 
   // Handle email confirmation callback
   useEffect(() => {
@@ -217,13 +187,8 @@ export function LoginPage() {
                   type="text"
                   value={inviteCode}
                   readOnly
-                  disabled={inviteValidating}
+                  disabled
                 />
-                {inviteValidating && (
-                  <Typography variant="caption" color="tertiary" className="mt-1 block">
-                    Validating code...
-                  </Typography>
-                )}
               </div>
             )}
 
