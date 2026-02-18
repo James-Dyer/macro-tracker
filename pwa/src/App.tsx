@@ -57,7 +57,7 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
+        <BrowserRouter basename="/macro-tracker">
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<LandingPage />} />

@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script>
+      // SPA redirect for GitHub Pages: send unknown paths back to index.html
+      var path = location.pathname;
+      var repo = '/macro-tracker';
+      if (path.startsWith(repo + '/') || path === repo) {
+        var sub = path.slice(repo.length + 1);
+        location.replace(
+          repo + '/?p=' + encodeURIComponent(sub + location.search + location.hash)
+        );
+      } else {
+        location.replace(repo + '/');
+      }
+    </script>
+  </head>
+  <body></body>
+</html>

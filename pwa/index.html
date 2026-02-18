@@ -2,6 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- SPA routing restore: GitHub Pages 404.html redirects here with ?p=... -->
+    <script>
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var p = params.get('p');
+        if (p) {
+          history.replaceState(null, '', '/macro-tracker/' + decodeURIComponent(p));
+        }
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
     <!-- PWA -->
