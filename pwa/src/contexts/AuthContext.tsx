@@ -12,6 +12,7 @@ interface AuthContextType {
   onboardingLoading: boolean;
   refetchOnboarding: () => Promise<void>;
   tier: 'free' | 'beta' | 'paid';
+  tierLoading: boolean;
   refetchTier: () => Promise<void>;
 }
 
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [needsOnboarding, setNeedsOnboarding] = useState(true);
   const [onboardingLoading, setOnboardingLoading] = useState(true);
   const [tier, setTier] = useState<'free' | 'beta' | 'paid'>('free');
+  const [tierLoading, setTierLoading] = useState(true);
 
   const user = session?.user ?? null;
   const userId = user?.id;
@@ -30,10 +32,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchTier = useCallback(async () => {
     if (!userId) {
       setTier('free');
+      setTierLoading(false);
       return;
     }
 
     try {
+      setTierLoading(true);
       const { data, error } = await supabase
         .from('user_profile')
         .select('tier')
@@ -42,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('[AuthContext] Error fetching tier:', error);
-        setTier('free'); // Default to free on error
+        setTier('free');
         return;
       }
 
@@ -50,6 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('[AuthContext] Unexpected error fetching tier:', error);
       setTier('free');
+    } finally {
+      setTierLoading(false);
     }
   }, [userId]);
 
@@ -137,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onboardingLoading,
     refetchOnboarding: checkOnboardingStatus,
     tier,
+    tierLoading,
     refetchTier: fetchTier,
   };
 

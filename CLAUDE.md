@@ -64,10 +64,12 @@ pwa/src/
 │   ├── layout/         # AppLayout + BottomNav
 │   └── auth/           # ProtectedRoute (route guard with onboarding check)
 ├── hooks/              # Custom React hooks
-│   ├── useMeals        # Fetch/manage meals, calculate totals, delete/update
-│   ├── useGoals        # Fetch/save daily macro goals
-│   ├── useSession      # Supabase auth session management
-│   └── useLocalStorage # Persist state to localStorage
+│   ├── useMeals            # Fetch/manage meals, calculate totals, delete/update
+│   ├── useGoals            # Fetch/save daily macro goals
+│   ├── useSession          # Supabase auth session management
+│   ├── useLocalStorage     # Persist state to localStorage
+│   ├── useEntitlement      # Feature access checks based on user tier (scaffolded)
+│   └── useInviteRedemption # Calls redeem_invite() RPC to upgrade user tier
 ├── contexts/           # React Context providers
 │   ├── AuthContext     # Global auth state, onboarding detection
 │   └── ThemeContext    # Dark/light theme toggle with localStorage
@@ -91,11 +93,18 @@ pwa/src/
 
 1. **AuthContext** (`contexts/AuthContext.tsx`) provides global auth state via `useAuth()` hook
    - Checks if user has `daily_goal` record to determine onboarding status
-   - Provides `refetchOnboarding()` for post-signup redirect to onboarding
+   - Fetches user `tier` from `user_profile` table (`free` | `beta` | `paid`)
+   - Provides `refetchOnboarding()` and `refetchTier()` for manual refresh
+   - Exposes `tierLoading` so ProtectedRoute can wait before making tier decisions
+   - Attempts auto-redemption of any `pendingInviteCode` stored in localStorage on login
 2. **useSession** hook manages Supabase session + `onAuthStateChange` listener
-3. **ProtectedRoute** component redirects unauthenticated users to `/login`
-   - Forces new users (no daily_goal) to `/dashboard/onboarding/goals`
-4. **LoginPage** has tab-based login/signup UI (email + password)
+3. **ProtectedRoute** component enforces three gates in order:
+   - Unauthenticated → redirect to `/login`
+   - `tier === 'free'` → render "Invite Only" blocking screen (closed beta)
+   - `needsOnboarding` → redirect to `/dashboard/onboarding/goals`
+4. **LoginPage** handles invite codes via `?invite={code}` URL param:
+   - Stores code in localStorage immediately for resilience
+   - Attempts redemption during signup; falls back to auto-redemption on next login
 5. Session persists in localStorage automatically (Supabase handles refresh tokens)
 
 **Onboarding Flow (New Users):**
@@ -177,12 +186,42 @@ food_item (
 
 -- RLS Policies: All tables have user_id-based isolation
 -- food_item access controlled via meal ownership (EXISTS subquery)
+
+user_profile (
+  id UUID PK,
+  user_id UUID UNIQUE FK → auth.users,
+  tier TEXT ('free' | 'beta' | 'paid') DEFAULT 'free',
+  created_at, updated_at TIMESTAMP
+)
+
+invite_code (
+  id UUID PK,
+  code TEXT UNIQUE,
+  tier TEXT ('beta' | 'paid'),
+  max_uses INTEGER,
+  expires_at TIMESTAMP (nullable),
+  status TEXT ('active' | 'disabled')
+)
+
+invite_redemption (
+  id UUID PK,
+  invite_code_id UUID FK → invite_code,
+  user_id UUID UNIQUE FK → auth.users,  -- one redemption per user
+  redeemed_at TIMESTAMP
+)
+
+-- Entitlement RPC:
+-- redeem_invite(p_code, p_user_id) - atomic validation + tier upgrade (SECURITY DEFINER)
+-- Auto-trigger: create_user_profile() fires on auth.users INSERT → tier='free'
 ```
 
 **Schema Migrations:**
-1. `00001_create_schema.sql` - Initial tables + RLS policies
-2. `00002_add_photo_path.sql` - Added photo_path for signed URLs
-3. `00003_add_thumbnail_path.sql` - Added thumbnail_path for mobile optimization
+1. `20260122060034_create_initial_schema.sql` - Initial tables + RLS policies
+2. `20260131082225_add_photo_path.sql` - Added photo_path for signed URLs
+3. `20260131083451_add_thumbnail_path.sql` - Added thumbnail_path for mobile optimization
+4. `20260206074057_add_entitlement_system.sql` - user_profile, invite_code, invite_redemption tables + redeem_invite RPC
+
+**Closed Beta:** `ProtectedRoute` blocks `free` tier users with an "Invite Only" screen. All new signups start as `free` until they redeem a valid invite code.
 
 **Important:** Daily totals are computed on read (not stored). Aggregation is instant for ~15 rows/day.
 
@@ -364,7 +403,7 @@ if (!envValidation.valid) {
   - Activates if Gemini API fails
   - Uses json_schema strict mode for structured output
 - Both models return complete nutrition data (no external database lookups needed)
-- Single API call per meal (food identification + nutrition + OCR in one request)
+- Single API call per meal (food identification + portion estimation + nutrition in one request)
 - API keys stored in Supabase Edge Function secrets (not in code)
 
 **User Context Input:**
@@ -427,6 +466,12 @@ fiber_g = (target_calories / 1000) * 12
 **Manual Testing Checklist:**
 - Unauthenticated access redirects to `/login`
 - Signup creates user, shows email confirmation message
+- **Closed beta / invite gate:**
+  - Signup without invite code → logs in → sees "Invite Only" screen (not dashboard)
+  - Sign out button on invite screen works
+  - Signup via `/login?invite={code}` → invite redeemed → full app access
+  - Invite with expired/disabled/maxed-out code shows correct error
+  - Pending invite code in localStorage auto-redeems on next login
 - **New users forced to onboarding flow:**
   - OnboardingGoalsPage shows (no daily_goal record)
   - Recommended mode calculates BMR/TDEE correctly
@@ -501,6 +546,7 @@ This project follows a **learning-first approach** (see PRD.md). When implementi
 ## File Locations Reference
 
 - **Auth:** `contexts/AuthContext.tsx`, `hooks/useSession.ts`, `components/auth/ProtectedRoute.tsx`
+- **Entitlements:** `hooks/useEntitlement.ts`, `hooks/useInviteRedemption.ts`
 - **Theme:** `contexts/ThemeContext.tsx`
 - **Data Hooks:** `hooks/useMeals.ts`, `hooks/useGoals.ts`, `hooks/useLocalStorage.ts`
 - **Onboarding:** `pages/onboarding/OnboardingGoalsPage.tsx`, `OnboardingHowItWorksPage.tsx`, `OnboardingFirstMealPage.tsx`
@@ -508,9 +554,10 @@ This project follows a **learning-first approach** (see PRD.md). When implementi
 - **Edge Functions:** `../supabase/functions/analyze-meal/`, `../supabase/functions/save-meal/`
 - **Shared Edge Utils:** `../supabase/functions/_shared/env.ts`, `errors.ts`, `logger.ts`, `meal-schema.ts`
 - **Migrations:**
-  - `../supabase/migrations/00001_create_schema.sql`
-  - `../supabase/migrations/00002_add_photo_path.sql`
-  - `../supabase/migrations/00003_add_thumbnail_path.sql`
+  - `../supabase/migrations/20260122060034_create_initial_schema.sql`
+  - `../supabase/migrations/20260131082225_add_photo_path.sql`
+  - `../supabase/migrations/20260131083451_add_thumbnail_path.sql`
+  - `../supabase/migrations/20260206074057_add_entitlement_system.sql`
 - **Supabase Client:** `services/supabase.ts`
 - **Utils:** `utils/imageUtils.ts`, `utils/macroCalculations.ts`, `utils/errors.ts`, `utils/logger.ts`
 - **Design System:** `index.css` (theme tokens), `components/ui/*`

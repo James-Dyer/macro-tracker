@@ -311,6 +311,7 @@ When building each feature:
 | **Calendar view** | Historical meals grouped by date | Date grouping, signed URL caching, list performance |
 | **Dashboard** | Daily progress with circular macro rings | Data visualization, progress indicators, custom hooks |
 | **Dark mode** | System-wide theme toggle with persistence | useContext for theme, localStorage, CSS variables |
+| **Entitlement system** | Invite-code-based tier access (free/beta/paid) with closed beta gating | Postgres RPC, atomic transactions, RLS, custom hooks |
 
 ### Build Order (Pedagogical Sequence)
 
@@ -393,6 +394,42 @@ fiber: numeric(5,2) (grams, rounded to 0.1g)
 
 *Note: Daily totals are computed on read from FoodItems. No denormalized summary table needed at MVP scale (~15 rows/day; aggregation is instant).*
 
+### UserProfile
+```
+id: uuid (primary key)
+user_id: uuid (foreign key → auth.users, UNIQUE)
+tier: text ('free' | 'beta' | 'paid')
+created_at: timestamp
+updated_at: timestamp
+```
+
+**Note:** Auto-created by database trigger on every new signup (defaults to `'free'`). Tier can only be changed via the `redeem_invite()` RPC (SECURITY DEFINER—bypasses RLS). Users have SELECT-only access; no self-promotion possible.
+
+**Closed Beta:** During the testing phase, `free` tier users are blocked at `ProtectedRoute` and shown an "Invite Only" screen. Access requires redeeming a valid invite code at signup.
+
+### InviteCode
+```
+id: uuid (primary key)
+code: text (unique)
+tier: text ('beta' | 'paid')
+max_uses: integer
+expires_at: timestamp (nullable)
+status: text ('active' | 'disabled')
+created_at: timestamp
+```
+
+**Note:** Service-role access only (no user RLS policies). Codes distributed as URL params: `/login?invite={code}`. The `redeem_invite()` Postgres RPC atomically validates, checks expiry, enforces max uses, and upgrades the user's tier in a single locked transaction.
+
+### InviteRedemption
+```
+id: uuid (primary key)
+invite_code_id: uuid (foreign key → InviteCode)
+user_id: uuid (foreign key → auth.users, UNIQUE — one redemption per user)
+redeemed_at: timestamp
+```
+
+**Note:** Audit trail for all redemptions. LoginPage captures `?invite={code}` from the URL, persists it to localStorage for resilience, and attempts redemption immediately after signup. AuthContext retries auto-redemption on next login if the first attempt fails.
+
 ---
 
 ## 8. Non-Functional Requirements
@@ -412,14 +449,37 @@ fiber: numeric(5,2) (grams, rounded to 0.1g)
 
 ## 9. Monetization Strategy
 
-### Freemium Model
+### Current State: Closed Beta (Invite-Only)
 
-| Tier | Price | Features |
+The app is currently in closed beta. A three-tier entitlement system is fully implemented in the database and frontend:
+
+| Tier | Access | Assignment |
+|------|--------|------------|
+| **free** | Blocked — "Invite Only" screen | Default for all new signups |
+| **beta** | Full app access | Granted via invite code redemption |
+| **paid** | Full app access (future premium features) | Reserved for future payment integration |
+
+**How it works:**
+- Every new signup automatically gets a `user_profile` record with `tier = 'free'` (via database trigger)
+- Free-tier users are blocked at `ProtectedRoute` with a friendly "invite only" message and sign-out button
+- Beta access is granted by redeeming an invite code — via `?invite={code}` URL param at signup, or auto-applied from localStorage on next login
+- Invite codes are stored in the `invite_code` table with configurable max uses and expiry
+- Code redemptions are tracked in `invite_redemption` (one per user, prevents double-dipping)
+- The `redeem_invite` Postgres RPC handles atomic validation with row-level locking
+
+**Database tables:** `user_profile`, `invite_code`, `invite_redemption`
+**Frontend:** `useEntitlement` hook, `useInviteRedemption` hook, `AuthContext.tier`
+
+### Future Freemium Model (Post-Beta)
+
+| Tier | Price | Planned Features |
 |------|-------|----------|
-| **Free** | $0 | 3 AI scans/day, basic tracking, manual entry unlimited |
+| **Free** | $0 | Limited AI scans/day, basic tracking |
 | **Premium** | $4.99/mo or $39.99/yr | Unlimited scans, advanced analytics, data export, priority support |
 
-### Revenue Optimization
+**Note:** `useEntitlement` hook is scaffolded but not yet enforcing any limits — all tiers currently have full access. Feature gates will be wired up when the free tier opens.
+
+### Revenue Optimization (Post-Beta)
 
 - RevenueCat for subscription management
 - Stripe web billing for users who prefer to avoid app store fees
@@ -478,9 +538,14 @@ fiber: numeric(5,2) (grams, rounded to 0.1g)
 ### Phase 3: Polish & Testing 🔄 IN PROGRESS
 - ✅ Performance optimization (image compression, thumbnail caching, signed URL caching)
 - ✅ Error handling with categorization (ErrorCategory enum)
+- ✅ Entitlement system: three-tier (free/beta/paid) with invite code redemption
+- ✅ Closed beta gate: free-tier users blocked at ProtectedRoute with invite-only screen
+- ✅ Branding pivot: removed all food scale references, messaging updated to one-photo simplicity
 - ⏳ Known issues (see TODO.md):
-  - Security: Validate photoPath belongs to user
-  - Edge case: Handle empty foods array from AI
+  - Security: Validate photoPath belongs to user (SECURITY-1)
+  - Edge case: Handle empty foods array from AI (EDGE-CASE-2)
+  - Edge case: Duplicate email signup gives no error (EDGE-CASE-4)
+  - QoL: Theme preference stored in localStorage only, not synced across devices (QOL-3)
 - ⏳ Beta testing with real users
 - ⏳ Bug fixes and refinements
 
@@ -517,6 +582,7 @@ fiber: numeric(5,2) (grams, rounded to 0.1g)
 | Backend | Supabase | Full-featured, open-source, predictable pricing |
 | Storage Strategy | Dual-file (full + thumbnail) with signed URLs | Security (RLS) + performance (mobile optimization) |
 | Onboarding | BMR/TDEE calculator (Mifflin-St Jeor) + manual option | Personalized recommendations vs user control |
+| Beta Access | Invite code system (free/beta/paid tiers) | Control rollout during testing; prevent unmetered free usage |
 | Payments | RevenueCat + Stripe | Cross-platform subscriptions with web billing option (not yet implemented) |
 | Development Approach | Learning-first, instructional | Master fundamentals, not just ship code |
 | Theme System | Dark/light mode with localStorage persistence | User preference, modern UX expectation |
