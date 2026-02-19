@@ -14,6 +14,7 @@ interface AuthContextType {
   tier: 'free' | 'beta' | 'paid';
   tierLoading: boolean;
   refetchTier: () => Promise<void>;
+  redeemCode: (code: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -59,6 +60,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [userId]);
 
+  // Core invite redemption logic — call the RPC, update tier on success
+  const redeemCode = useCallback(async (code: string): Promise<boolean> => {
+    if (!userId) return false;
+
+    try {
+      const { error } = await supabase.rpc('redeem_invite', {
+        p_code: code,
+        p_user_id: userId,
+      });
+
+      if (error) {
+        console.error('[AuthContext] redeemCode failed:', error);
+        return false;
+      }
+
+      localStorage.removeItem('pendingInviteCode');
+      await fetchTier();
+      return true;
+    } catch (error) {
+      console.error('[AuthContext] redeemCode exception:', error);
+      return false;
+    }
+  }, [userId, fetchTier]);
+
   // Auto-redemption: Check for pending invite code and redeem if present
   const tryAutoRedemption = useCallback(async () => {
     if (!userId) return;
@@ -67,27 +92,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!pendingCode) return;
 
     console.log('[AuthContext] Attempting auto-redemption for code:', pendingCode);
-
-    try {
-      const { data, error } = await supabase.rpc('redeem_invite', {
-        p_code: pendingCode,
-        p_user_id: userId,
-      });
-
-      if (error) {
-        console.error('[AuthContext] Auto-redemption failed:', error);
-        // Keep code in localStorage for retry on next session
-        return;
-      }
-
-      console.log('[AuthContext] Auto-redemption successful, tier:', data);
-      localStorage.removeItem('pendingInviteCode');
-      await fetchTier(); // Refetch tier
-    } catch (error) {
-      console.error('[AuthContext] Auto-redemption exception:', error);
-      // Keep code for retry
+    const success = await redeemCode(pendingCode);
+    if (success) {
+      console.log('[AuthContext] Auto-redemption successful');
+    } else {
+      console.log('[AuthContext] Auto-redemption failed — code kept for retry');
     }
-  }, [userId, fetchTier]);
+  }, [userId, redeemCode]);
 
   // Check onboarding status
   const checkOnboardingStatus = useCallback(async () => {
@@ -145,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     tier,
     tierLoading,
     refetchTier: fetchTier,
+    redeemCode,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
