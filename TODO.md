@@ -1,19 +1,11 @@
-EDGE-CASE-2
-Problem Summary                                                                                      
-When users upload images that don't contain food, the Gemini AI model returns a valid response structure but with an empty foods array. The frontend currently navigates to ConfirmMealPage and shows a blank food list, only displaying an error when the user tries to save.                                           
-- detect and return a NO_FOOD_DETECTED error when
-   - foods array is empty
-   - confidence is below a 0.3
-- Show helpful tips when no food is detected:
-   - Clear error message 
-   - Tips for better photos (lighting, clarity, etc.)              
-   - "Try Again" button           
-- Optional Manual Entry Fallback - Let users skip AI and enter food manually if detection keeps failing 
 
-QOL-3
-- theme choice persists to localstorage, not the user's db
-- this may cause the theme to reset when the user logs in from different device or localstorate is cleared
-- i like the default kept at light mode, right now its default to dark
 
 EDGE-CASE-4
 - when user tried to sign up with an already existing email our system doesnt catch that, and still prompts the user to check thier email. I assume something in supabase side catches that and doesnt send and email, but that error is not forwarded to the user.
+
+QOL-5
+- scrolling position doesnt reset on switching pages: for example, when i scroll down on dashboard, and switch to history, my scroll postion is down at the bottom, instead starting at the top again. 
+
+QOL-6
+- free mode blocking screen only displays after the user creates and confirms thier account
+- if a user is invited to closed beta and creates an account with their email without the code, they get assigned as a free account but since thier account is already made, they have to contact a dev to have thier acct upgraded.
