@@ -88,6 +88,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const tryAutoRedemption = useCallback(async () => {
     if (!userId) return;
 
+    // Skip if already on a paid tier — any pending code in localStorage is stale
+    if (tier !== 'free') {
+      localStorage.removeItem('pendingInviteCode');
+      return;
+    }
+
     const pendingCode = localStorage.getItem('pendingInviteCode');
     if (!pendingCode) return;
 
@@ -98,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       console.log('[AuthContext] Auto-redemption failed — code kept for retry');
     }
-  }, [userId, redeemCode]);
+  }, [userId, tier, redeemCode]);
 
   // Check onboarding status
   const checkOnboardingStatus = useCallback(async () => {
