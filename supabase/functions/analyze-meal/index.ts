@@ -265,7 +265,16 @@ serve(async (req) => {
       }
     }
 
-    logger.info('Analysis complete', { foodCount: response.foods.length });
+    logger.info('Analysis complete', { foodCount: response.foods.length, confidence: response.confidence });
+
+    // No food detected or very low confidence — return a flag.
+    if (response.foods.length === 0 || response.confidence < 0.3) {
+      logger.info('No food detected in photo', { confidence: response.confidence, foodCount: response.foods.length });
+      return new Response(JSON.stringify({ noFoodDetected: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
 
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

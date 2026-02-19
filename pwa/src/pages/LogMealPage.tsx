@@ -19,6 +19,7 @@ export function LogMealPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [noFoodDetected, setNoFoodDetected] = useState(false);
   const [userContext, setUserContext] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const analyzeRunId = useRef(0);
@@ -56,6 +57,7 @@ export function LogMealPage() {
     setSelectedImage(imageUrl);
     setSelectedFile(file);
     setError(null);
+    setNoFoodDetected(false);
   };
 
   const handleTakePhoto = () => {
@@ -66,6 +68,7 @@ export function LogMealPage() {
     analyzeRunId.current += 1; // cancel any in-flight analysis
     setIsAnalyzing(false);
     setError(null);
+    setNoFoodDetected(false);
     setUserContext('');
     setSelectedFile(null);
     if (selectedImage) {
@@ -145,6 +148,13 @@ export function LogMealPage() {
 
       // Check if this analysis was cancelled
       if (analyzeRunId.current !== runId) return;
+
+      // AI couldn't find food
+      if (data.noFoodDetected) {
+        setNoFoodDetected(true);
+        setIsAnalyzing(false);
+        return;
+      }
 
       // Navigate to ConfirmMealPage with results
       navigate('/dashboard/confirm', {
@@ -290,7 +300,45 @@ export function LogMealPage() {
               </Card>
             )}
 
-            {/* Error Message */}
+            {/* No food detected — friendly guidance, not an error */}
+            {noFoodDetected && (
+              <Card variant="filled" padding="md" className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                <div className="flex items-start gap-3 mb-3">
+                  <span className="text-2xl mt-0.5">🔍</span>
+                  <div>
+                    <Typography variant="body" className="font-semibold text-amber-800 dark:text-amber-200">
+                      No food detected
+                    </Typography>
+                    <Typography variant="bodySmall" className="text-amber-700 dark:text-amber-300 mt-0.5">
+                      We couldn't identify food in this photo. Try these tips:
+                    </Typography>
+                  </div>
+                </div>
+                <ul className="space-y-1.5 mb-4 pl-1">
+                  {[
+                    'Make sure food fills most of the frame',
+                    'Use good lighting — avoid shadows over the plate',
+                    'Shoot from directly above (top-down works best)',
+                    'Add context below to help the AI (e.g. "grilled chicken")',
+                  ].map((tip) => (
+                    <li key={tip} className="flex items-start gap-2">
+                      <span className="text-amber-500 mt-0.5">•</span>
+                      <Typography variant="bodySmall" className="text-amber-700 dark:text-amber-300">
+                        {tip}
+                      </Typography>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  title="Try Again"
+                  onClick={handleRetake}
+                  size="lg"
+                  fullWidth
+                />
+              </Card>
+            )}
+
+            {/* Error Message — actual system errors only */}
             {error && (
               <Card variant="filled" padding="md" className="bg-red-50 border border-red-200">
                 <Typography variant="body" className="text-red-700">
@@ -300,7 +348,7 @@ export function LogMealPage() {
             )}
 
             <div className="space-y-2">
-              {!isAnalyzing && (
+              {!isAnalyzing && !noFoodDetected && (
                 <Button
                   title="Analyze Meal"
                   onClick={handleAnalyze}
@@ -308,14 +356,16 @@ export function LogMealPage() {
                   fullWidth
                 />
               )}
-              <Button
-                title="Retake Photo"
-                variant="secondary"
-                onClick={handleRetake}
-                disabled={isAnalyzing}
-                size="lg"
-                fullWidth
-              />
+              {!noFoodDetected && (
+                <Button
+                  title="Retake Photo"
+                  variant="secondary"
+                  onClick={handleRetake}
+                  disabled={isAnalyzing}
+                  size="lg"
+                  fullWidth
+                />
+              )}
             </div>
           </div>
         )}
