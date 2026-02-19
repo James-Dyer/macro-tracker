@@ -23,8 +23,23 @@ export function LogMealPage() {
   const [userContext, setUserContext] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const analyzeRunId = useRef(0);
+  const noFoodRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  // Scroll to feedback cards when they appear so the user doesn't miss them
+  useEffect(() => {
+    if (noFoodDetected) {
+      noFoodRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [noFoodDetected]);
+
+  useEffect(() => {
+    if (error) {
+      errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [error]);
 
   // Check for pre-selected file from navigation state
   useEffect(() => {
@@ -302,6 +317,7 @@ export function LogMealPage() {
 
             {/* No food detected — friendly guidance, not an error */}
             {noFoodDetected && (
+              <div ref={noFoodRef}>
               <Card variant="filled" padding="md" className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
                 <div className="flex items-start gap-3 mb-3">
                   <span className="text-2xl mt-0.5">🔍</span>
@@ -336,15 +352,18 @@ export function LogMealPage() {
                   fullWidth
                 />
               </Card>
+              </div>
             )}
 
             {/* Error Message — actual system errors only */}
             {error && (
+              <div ref={errorRef}>
               <Card variant="filled" padding="md" className="bg-red-50 border border-red-200">
                 <Typography variant="body" className="text-red-700">
                   {error}
                 </Typography>
               </Card>
+              </div>
             )}
 
             <div className="space-y-2">
