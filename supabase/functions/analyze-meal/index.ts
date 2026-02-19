@@ -119,6 +119,15 @@ serve(async (req) => {
       );
     }
 
+    // Verify photoPath belongs to the authenticated user.
+    // Storage paths are structured as {userId}/{filename}, so the first
+    // segment must match the JWT user ID. Without this check, any authenticated
+    // user could request analysis of another user's photo via the service role key.
+    if (!photoPath.startsWith(`${user.id}/`)) {
+      logger.warn('photoPath ownership check failed', { userId: user.id });
+      throw new ApiError(ErrorCode.VALIDATION_ERROR, 'Forbidden', 403);
+    }
+
     // Sanitize user context
     const sanitizationResult = sanitizeUserContext(context);
     if (sanitizationResult.flagged) {
