@@ -3,6 +3,7 @@ import { supabase } from '../services/supabase';
 
 interface UseInviteRedemptionResult {
   redeemInvite: (code: string, userId: string) => Promise<string | null>;
+  validateInvite: (code: string) => Promise<string | null>;
   loading: boolean;
   error: string | null;
 }
@@ -14,6 +15,28 @@ interface UseInviteRedemptionResult {
 export function useInviteRedemption(): UseInviteRedemptionResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pre-signup validation: checks code validity WITHOUT consuming it.
+  // Returns null if valid, or an error string if invalid.
+  // Callable by anon users (before account creation).
+  const validateInvite = async (code: string): Promise<string | null> => {
+    try {
+      const { data, error: rpcError } = await supabase.rpc('validate_invite', {
+        p_code: code,
+      });
+
+      if (rpcError) {
+        console.error('[useInviteRedemption] validate_invite RPC error:', rpcError);
+        return 'Failed to validate invite code';
+      }
+
+      // RPC returns null if valid, error string if invalid
+      return data as string | null;
+    } catch (err) {
+      console.error('[useInviteRedemption] validateInvite unexpected error:', err);
+      return 'Failed to validate invite code';
+    }
+  };
 
   const redeemInvite = async (code: string, userId: string): Promise<string | null> => {
     setLoading(true);
@@ -58,6 +81,7 @@ export function useInviteRedemption(): UseInviteRedemptionResult {
 
   return {
     redeemInvite,
+    validateInvite,
     loading,
     error,
   };

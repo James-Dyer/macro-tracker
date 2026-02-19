@@ -16,7 +16,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
-  const { redeemInvite, error: redemptionError } = useInviteRedemption();
+  const { redeemInvite, validateInvite, error: redemptionError } = useInviteRedemption();
 
   // Check for invite code and mode query parameters
   useEffect(() => {
@@ -61,7 +61,18 @@ export function LoginPage() {
 
     try {
       if (mode === 'signup') {
-        // Step 1: Create user account (Supabase handles auth)
+        // Step 1: Pre-validate invite code before creating the account.
+        // This prevents the account from being created with an invalid code,
+        // which would leave the user stuck on the free tier with no clear path forward.
+        if (inviteCode) {
+          const validationError = await validateInvite(inviteCode);
+          if (validationError) {
+            setError(validationError);
+            return;
+          }
+        }
+
+        // Step 2: Create user account (Supabase handles auth)
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -89,8 +100,10 @@ export function LoginPage() {
             localStorage.removeItem('pendingInviteCode');
             setMessage(`Account created! You now have ${tier === 'beta' ? 'Beta' : 'Premium'} access. Check your email to confirm.`);
           } else {
-            // Redemption failed - code stays in localStorage for auto-retry
-            setMessage('Account created! Check your email to confirm. (Invite code will be applied on first login)');
+            // Redemption failed after account creation (rare race condition).
+            // Don't show a success message — the redemptionError from the hook
+            // already explains what went wrong. Just confirm the account exists.
+            setMessage('Account created! Check your email to confirm, then enter your invite code when you log in.');
           }
         } else {
           setMessage('Check your email to confirm your account!');
