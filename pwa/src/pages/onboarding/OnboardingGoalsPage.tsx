@@ -304,23 +304,34 @@ export function OnboardingGoalsPage() {
                 </div>
 
                 <div>
-                  <Typography variant="label" className="mb-2 block">
-                    Activity Level
-                  </Typography>
-                  <ButtonGroup
-                    options={[
-                      { value: 'sedentary' as const, label: 'Sedentary' },
-                      { value: 'moderate' as const, label: 'Moderate' },
-                      { value: 'active' as const, label: 'Active' },
-                    ]}
-                    value={activityLevel}
-                    onChange={setActivityLevel}
-                    columns={3}
-                  />
+                  {(() => {
+                    const levels = ['sedentary', 'light', 'moderate', 'active', 'very_active'] as const;
+                    const labels = ['1', '2', '3', '4', '5'];
+                    return (
+                      <Slider
+                        label="Activity Level"
+                        value={levels.indexOf(activityLevel)}
+                        onChange={(v) => setActivityLevel(levels[v])}
+                        min={0}
+                        max={4}
+                        step={1}
+                        formatValue={(v) => labels[v]}
+                      />
+                    );
+                  })()}
+                  <div className="flex justify-between mt-1 px-0.5">
+                    <Typography variant="caption" color="tertiary">Sedentary</Typography>
+                    <Typography variant="caption" color="tertiary">Light</Typography>
+                    <Typography variant="caption" color="tertiary">Moderate</Typography>
+                    <Typography variant="caption" color="tertiary">Active</Typography>
+                    <Typography variant="caption" color="tertiary">Very Active</Typography>
+                  </div>
                   <Typography variant="bodySmall" color="secondary" className="mt-2">
-                    {activityLevel === 'sedentary' && 'Little to no exercise'}
-                    {activityLevel === 'moderate' && '3-5 days/week exercise'}
-                    {activityLevel === 'active' && '6-7 days/week intense exercise'}
+                    {activityLevel === 'sedentary' && 'Desk job, little to no exercise'}
+                    {activityLevel === 'light' && 'Light exercise 1–3 days/week'}
+                    {activityLevel === 'moderate' && 'Moderate exercise 3–5 days/week'}
+                    {activityLevel === 'active' && 'Hard exercise 6–7 days/week'}
+                    {activityLevel === 'very_active' && 'Very hard exercise or physical job'}
                   </Typography>
                 </div>
               </div>

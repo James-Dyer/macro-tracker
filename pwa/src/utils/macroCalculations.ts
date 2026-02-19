@@ -1,5 +1,5 @@
 export type Goal = 'lose' | 'maintain' | 'gain';
-export type ActivityLevel = 'sedentary' | 'moderate' | 'active';
+export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
 export type Sex = 'male' | 'female';
 export type WeightUnit = 'lbs' | 'kg';
 export type HeightUnit = 'ft-in' | 'cm';
@@ -56,10 +56,13 @@ export function calculateRecommendedMacros(
   const bmr = calculateBMR(weightKg, heightCm, stats.age, stats.sex);
 
   // Apply activity multiplier
+  // Standard Mifflin-St Jeor activity multipliers (5-level scale)
   const activityMultipliers: Record<ActivityLevel, number> = {
-    sedentary: 1.2,
-    moderate: 1.55,
-    active: 1.725,
+    sedentary:  1.2,    // Desk job, little/no exercise
+    light:      1.375,  // Light exercise 1–3 days/week
+    moderate:   1.55,   // Moderate exercise 3–5 days/week
+    active:     1.725,  // Hard exercise 6–7 days/week
+    very_active: 1.9,   // Very hard exercise or physical job
   };
   const tdee = bmr * activityMultipliers[stats.activityLevel];
 
