@@ -69,6 +69,13 @@ export function LoginPage() {
 
         if (signUpError) throw signUpError;
 
+        // Supabase doesn't return an error for duplicate emails — instead it
+        // returns a user with an empty identities array and sends no email.
+        if (signUpData.user?.identities?.length === 0) {
+          setError('An account with this email already exists. Try logging in instead.');
+          return;
+        }
+
         const userId = signUpData.user?.id;
 
         // Step 2: If invite code present, attempt redemption
