@@ -64,9 +64,9 @@ ORDER BY ic.created_at DESC;
 
 ## Share Invite Links
 
-**Format:**
+**Production link (share this one):**
 ```
-http://localhost:5173/login?invite=BETA-abc12345
+https://james-dyer.github.io/macro-tracker/login?invite=XXXXXXXXXXXX
 ```
 
 **What happens when user clicks:**
@@ -219,40 +219,3 @@ SELECT * FROM redeem_invite('BETA-abc12345', 'USER_ID_HERE');
 - Check redemption stats weekly
 - Identify unused codes
 - Follow up with testers
-
-## Example: Launch Closed Beta to 50 Testers
-
-```sql
--- Generate 50 single-use codes, expire in 60 days
-DO $$
-DECLARE
-  batch_size INTEGER := 50;
-  code_tier TEXT := 'beta';
-  code_max_uses INTEGER := 1;
-  code_expires_days INTEGER := 60;
-  code_prefix TEXT := 'BETA';
-  i INTEGER;
-  random_suffix TEXT;
-  full_code TEXT;
-BEGIN
-  FOR i IN 1..batch_size LOOP
-    random_suffix := upper(substring(md5(random()::text || clock_timestamp()::text) from 1 for 8));
-    full_code := code_prefix || '-' || random_suffix;
-    INSERT INTO invite_code (code, tier, max_uses, expires_at, status)
-    VALUES (full_code, code_tier, code_max_uses, NOW() + (code_expires_days || ' days')::INTERVAL, 'active');
-    RAISE NOTICE 'Generated: %', full_code;
-  END LOOP;
-END $$;
-```
-
-Then:
-1. Copy codes from logs
-2. Send personalized emails to 50 testers
-3. Monitor redemptions over first week
-4. Follow up with non-redeemers after 7 days
-
-## Quick Links
-
-- **Full documentation:** See `ENTITLEMENT_MIGRATION.md`
-- **Implementation details:** See `IMPLEMENTATION_SUMMARY.md`
-- **Full admin script:** See `supabase/scripts/generate_invites.sql`
