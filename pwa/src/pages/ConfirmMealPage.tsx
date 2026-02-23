@@ -82,7 +82,7 @@ export function ConfirmMealPage() {
     const newFoods = [...foods];
     newFoods[index] = {
       ...newFoods[index],
-      [field]: typeof value === "string" ? value : parseFloat(value.toString()) || 0,
+      [field]: field === "name" ? value : parseFloat(value.toString()) || 0,
     };
     setFoods(newFoods);
   };
