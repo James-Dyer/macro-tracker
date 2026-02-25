@@ -17,10 +17,11 @@ interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string; isActive: boolean }>;
   type: 'standard' | 'center-action';
+  end?: boolean;
 }
 
 const navItems: NavItem[] = [
-  { to: '/dashboard', label: 'Home', icon: HomeIcon, type: 'standard' },
+  { to: '/dashboard', label: 'Home', icon: HomeIcon, type: 'standard', end: true },
   { to: '/dashboard/history', label: 'History', icon: HistoryIcon, type: 'standard' },
   { to: '/dashboard/log', label: 'Log', icon: PlusIcon, type: 'center-action' },
   { to: '/dashboard/goals', label: 'Goals', icon: GoalsIcon, type: 'standard' },
@@ -114,6 +115,7 @@ export function BottomNav() {
             <NavLink
               key={item.to}
               to={item.to}
+              end={item.end}
               className={({ isActive }) =>
                 `flex-1 flex flex-col items-center justify-center gap-1 h-full transition-all duration-200 ${
                   isActive ? 'scale-105' : 'scale-100 active:scale-95'
@@ -147,11 +149,11 @@ export function BottomNav() {
 
 function HomeIcon({ className, isActive }: { className?: string; isActive: boolean }) {
   return (
-    <svg className={className} fill={isActive ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth={isActive ? 0 : 2}
+        strokeWidth={isActive ? 2.5 : 2}
         d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
       />
     </svg>
