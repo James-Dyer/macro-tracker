@@ -47,33 +47,41 @@ export function ConfirmMealPage() {
   const { mealId } = useParams<{ mealId?: string }>();
   const { updateMeal } = useMeals();
 
-  // Detect mode based on URL param
-  const mode = mealId ? "edit" : "new";
-  const analysisResult = location.state as AnalysisResult | undefined;
+  // Detect mode based on URL param and route state
+  const isQuickAdd = !mealId && (location.state as { mode?: string })?.mode === 'quick-add';
+  const mode = mealId ? "edit" : isQuickAdd ? "quick-add" : "new";
+  // Only read analysisResult for "new" mode to avoid type confusion
+  const analysisResult = mode === "new" ? (location.state as AnalysisResult | undefined) : undefined;
   const editMeal = mode === "edit" ? location.state?.meal : undefined;
 
   // Initialize foods and notes lazily to avoid a separate useEffect
   const [foods, setFoods] = useState<DetectedFood[]>(() => {
     if (mode === "edit" && editMeal) return editMeal.food_items || [];
-    if (analysisResult) return analysisResult.foods || [];
-    return [];
+    if (mode === "new" && analysisResult) return analysisResult.foods || [];
+    // quick-add: one blank food item; EditFoodSheet opens immediately below
+    return [{ name: "", weight_g: 0, calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }];
   });
-  const [notes, setNotes] = useState<string>(() => {
+  const [notes] = useState<string>(() => {
     if (mode === "edit" && editMeal) return editMeal.notes || "";
-    if (analysisResult) return analysisResult.userContext || "";
+    if (mode === "new" && analysisResult) return analysisResult.userContext || "";
     return "";
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Edit sheet state — editingIndex tracks which card is open,
-  // draftFood holds unsaved edits until the user taps Save
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [draftFood, setDraftFood] = useState<DetectedFood | null>(null);
+  // draftFood holds unsaved edits until the user taps Save.
+  // For quick-add, the sheet opens immediately on index 0 with a blank food.
+  const [editingIndex, setEditingIndex] = useState<number | null>(
+    () => isQuickAdd ? 0 : null
+  );
+  const [draftFood, setDraftFood] = useState<DetectedFood | null>(
+    () => isQuickAdd ? { name: "", weight_g: 0, calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 } : null
+  );
   // isNewFood lets handleCancelEdit remove the card if it was never filled in
-  const [isNewFood, setIsNewFood] = useState(false);
+  const [isNewFood, setIsNewFood] = useState(isQuickAdd);
 
-  // Redirect if invalid state
+  // Redirect if invalid state (quick-add bypasses the analysisResult check)
   if (mode === "new" && !analysisResult) {
     navigate("/dashboard/log", { replace: true });
     return null;
@@ -128,8 +136,13 @@ export function ConfirmMealPage() {
     setIsNewFood(false);
   };
 
-  // Discard draft edits; remove the card entirely if it was just added blank
+  // Discard draft edits; remove the card entirely if it was just added blank.
+  // In quick-add mode, cancelling the sheet means abandoning the whole flow.
   const handleCancelEdit = () => {
+    if (isQuickAdd) {
+      navigate("/dashboard", { replace: true });
+      return;
+    }
     if (isNewFood && editingIndex !== null) {
       setFoods(foods.filter((_, i) => i !== editingIndex));
     }
@@ -167,10 +180,10 @@ export function ConfirmMealPage() {
     }
 
     const invalidFood = foods.find(
-      (f) => !f.name.trim() || f.weight_g <= 0
+      (f) => !f.name.trim() || f.weight_g < 0
     );
     if (invalidFood) {
-      setError("All foods must have a name and weight");
+      setError("All foods must have a name");
       return;
     }
 
@@ -197,8 +210,9 @@ export function ConfirmMealPage() {
               Authorization: `Bearer ${session.access_token}`,
             },
             body: {
-              photoPath: analysisResult!.photoPath,
-              thumbnailPath: analysisResult!.thumbnailPath,
+              // quick-add has no photo; new meals carry photoPath/thumbnailPath from analysisResult
+              photoPath: analysisResult?.photoPath,
+              thumbnailPath: analysisResult?.thumbnailPath,
               notes: notes || undefined,
               foodItems: foods.map((food) => ({
                 name: food.name,
@@ -214,6 +228,9 @@ export function ConfirmMealPage() {
         );
 
         if (saveError) throw saveError;
+
+        // Notify any mounted useCachedMeals instances to invalidate and refetch
+        window.dispatchEvent(new CustomEvent('meals-updated'));
       }
 
       navigate("/dashboard", { replace: true });
@@ -225,6 +242,59 @@ export function ConfirmMealPage() {
     }
   };
 
+  // Quick Add fast-save: called from the EditFoodSheet Save button.
+  // Commits the current draft + any already-added foods directly to the backend
+  // without requiring a second "Save Meal" tap on the confirm page.
+  const handleQuickAddSave = async () => {
+    if (!draftFood || draftFood.calories <= 0) {
+      setError("Enter at least the calories");
+      return;
+    }
+
+    // Build the final food list: committed foods + current draft.
+    // Fall back to "Quick Add" when the user skips the name field.
+    const finalisedDraft = {
+      ...draftFood,
+      name: draftFood.name.trim() || "Quick Add",
+    };
+    const foodsToSave = editingIndex !== null
+      ? foods.map((f, i) => (i === editingIndex ? finalisedDraft : f))
+      : [...foods, finalisedDraft];
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated. Please log in again.');
+
+      const { error: saveError } = await supabase.functions.invoke("save-meal", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: {
+          notes: notes || undefined,
+          foodItems: foodsToSave.map((food) => ({
+            name: food.name,
+            weight_g: food.weight_g,
+            calories: food.calories,
+            protein: food.protein,
+            carbs: food.carbs,
+            fat: food.fat,
+            fiber: food.fiber,
+          })),
+        },
+      });
+
+      if (saveError) throw saveError;
+
+      window.dispatchEvent(new CustomEvent('meals-updated'));
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      console.error("Error saving quick add:", err);
+      setError(err instanceof Error ? err.message : "Failed to save meal");
+      setIsSaving(false);
+    }
+  };
+
   const totals = calculateTotals();
 
   return (
@@ -232,62 +302,18 @@ export function ConfirmMealPage() {
       {/* Header */}
       <div className="px-5 pt-4 pb-3 bg-header backdrop-blur-sm border-b border-themed sticky top-0 z-10">
         <Typography variant="h2">
-          {mode === "edit" ? "Edit Meal" : "Confirm Meal"}
+          {mode === "edit" ? "Edit Meal" : mode === "quick-add" ? "Quick Add" : "Confirm Meal"}
         </Typography>
         <Typography variant="bodySmall" color="secondary" className="mt-0.5">
           {mode === "edit"
-            ? "Update food items and notes"
+            ? "Update food items"
+            : mode === "quick-add"
+            ? "Add calories and macros manually"
             : "Review and adjust detected foods"}
         </Typography>
       </div>
 
       <div className="px-5 py-5 space-y-4">
-        {/* Notes Field */}
-        <div>
-          <Typography variant="label" className="text-gray-700 mb-1">
-            Notes (optional)
-          </Typography>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary resize-none"
-            placeholder="Add notes about this meal..."
-            rows={2}
-          />
-        </div>
-
-        {/* Scale Detection Info (only for new meals) */}
-        {mode === "new" && analysisResult?.scaleDetected && (
-          <Card variant="filled" padding="md">
-            <div className="flex items-center gap-2">
-              <ScaleIcon className="w-5 h-5 text-green-600" />
-              <Typography variant="body" className="text-green-700 font-medium">
-                Scale detected: {analysisResult.scaleWeight}g
-              </Typography>
-            </div>
-          </Card>
-        )}
-
-        {/* Confidence Score (only for new meals) */}
-        {mode === "new" && analysisResult && (
-          <Card variant="filled" padding="md">
-            <Typography variant="label" className="text-gray-700 mb-1">
-              Overall Confidence
-            </Typography>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-primary rounded-full h-2 transition-all"
-                  style={{ width: `${analysisResult.confidence * 100}%` }}
-                />
-              </div>
-              <Typography variant="bodySmall" className="font-semibold text-themed">
-                {Math.round(analysisResult.confidence * 100)}%
-              </Typography>
-            </div>
-          </Card>
-        )}
-
         {/* Food Cards — read-only, tap to edit */}
         <div className="space-y-3">
           {foods.map((food, index) => (
@@ -412,149 +438,146 @@ export function ConfirmMealPage() {
         </div>
       </div>
 
-      {/* Edit Food Sheet — slides up from bottom like a native sheet */}
+      {/* Edit Food — full-screen page overlay, slides in over the confirm screen.
+           No sheet/backdrop/scroll tricks needed; iOS treats this like a normal page. */}
       {editingIndex !== null && draftFood && (
-        <>
-          {/* Backdrop — tapping it cancels the edit */}
-          <div
-            className="fixed inset-0 bg-black/50 z-40 animate-fade-in"
-            onClick={handleCancelEdit}
-          />
+        <div className="fixed inset-0 z-50 bg-app overflow-y-auto animate-slide-up">
+          {/* Header — sticky, mirrors the app's standard header style */}
+          <div className="sticky top-0 z-10 bg-header backdrop-blur-sm border-b border-themed px-5 pt-safe-top">
+            <div className="flex items-center justify-between h-14">
+              <button
+                onClick={handleCancelEdit}
+                className="flex items-center gap-1 text-primary font-medium text-sm"
+              >
+                <ChevronLeftIcon className="w-5 h-5" />
+                Back
+              </button>
+              <Typography variant="h3">Edit Food</Typography>
+              <button
+                onClick={isQuickAdd ? handleQuickAddSave : handleSaveEdit}
+                disabled={isSaving}
+                className="text-primary font-semibold text-sm disabled:opacity-40"
+              >
+                {isSaving ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
 
-          {/* Sheet */}
-          <div className="fixed inset-x-0 bottom-0 z-50 bg-elevated rounded-t-2xl shadow-2xl animate-slide-up-sheet max-h-[90vh] overflow-y-auto">
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
+          {/* Form */}
+          <div className="px-5 py-5 space-y-4 pb-safe-bottom">
+            {/* Food name */}
+            <div>
+              <Typography variant="label" className="text-gray-500 dark:text-gray-400 mb-1">
+                Food name
+              </Typography>
+              <input
+                type="text"
+                value={draftFood.name}
+                onChange={(e) => handleDraftUpdate("name", e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-transparent"
+                placeholder="e.g. Grilled chicken"
+              />
             </div>
 
-            {/* Sticky Save / Cancel */}
-            <div className="sticky top-0 bg-elevated z-10 px-4 pb-3 pt-1 border-b border-themed">
-              <div className="flex gap-3">
-                <Button
-                  title="Cancel"
-                  variant="secondary"
-                  fullWidth
-                  size="lg"
-                  onClick={handleCancelEdit}
-                />
-                <Button
-                  title="Save"
-                  variant="primary"
-                  fullWidth
-                  size="lg"
-                  onClick={handleSaveEdit}
-                />
-              </div>
-            </div>
-
-            {/* Edit form */}
-            <div className="px-4 pt-4 pb-8 space-y-4">
-              {/* Food Name */}
+            {/* Calories + Weight */}
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <Typography variant="label" className="text-gray-700 mb-1">
-                  Food name
+                <Typography variant="label" className="text-gray-500 dark:text-gray-400 mb-1">
+                  Calories
                 </Typography>
                 <input
-                  type="text"
-                  value={draftFood.name}
-                  onChange={(e) => handleDraftUpdate("name", e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-                  placeholder="Food name"
-                  // eslint-disable-next-line jsx-a11y/no-autofocus
-                  autoFocus
+                  type="number"
+                  value={draftFood.calories || ""}
+                  onChange={(e) => handleDraftUpdate("calories", e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-transparent"
+                  placeholder="0"
                 />
               </div>
-
-              {/* Weight */}
               <div>
-                <Typography variant="label" className="text-gray-700 mb-1">
-                  Weight (grams)
+                <Typography variant="label" className="text-gray-500 dark:text-gray-400 mb-1">
+                  Weight (g)
                 </Typography>
                 <input
                   type="number"
                   value={draftFood.weight_g || ""}
                   onChange={(e) => handleDraftUpdate("weight_g", e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
+                  className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-transparent"
                   placeholder="0"
                 />
               </div>
-
-              {/* Macros Grid */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Typography variant="label" className="text-gray-700 mb-1">
-                    Calories
-                  </Typography>
-                  <input
-                    type="number"
-                    value={draftFood.calories || ""}
-                    onChange={(e) => handleDraftUpdate("calories", e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <Typography variant="label" className="text-gray-700 mb-1">
-                    Protein (g)
-                  </Typography>
-                  <input
-                    type="number"
-                    value={draftFood.protein || ""}
-                    onChange={(e) => handleDraftUpdate("protein", e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <Typography variant="label" className="text-gray-700 mb-1">
-                    Carbs (g)
-                  </Typography>
-                  <input
-                    type="number"
-                    value={draftFood.carbs || ""}
-                    onChange={(e) => handleDraftUpdate("carbs", e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <Typography variant="label" className="text-gray-700 mb-1">
-                    Fat (g)
-                  </Typography>
-                  <input
-                    type="number"
-                    value={draftFood.fat || ""}
-                    onChange={(e) => handleDraftUpdate("fat", e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <Typography variant="label" className="text-gray-700 mb-1">
-                    Fiber (g)
-                  </Typography>
-                  <input
-                    type="number"
-                    value={draftFood.fiber || ""}
-                    onChange={(e) => handleDraftUpdate("fiber", e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              {/* Delete food */}
-              <button
-                onClick={handleDeleteFood}
-                className="w-full flex items-center justify-center gap-2 py-3 text-red-500 text-sm font-medium rounded-xl border border-red-200 dark:border-red-900/40 active:bg-red-50 dark:active:bg-red-950/20"
-              >
-                <TrashIcon className="w-4 h-4" />
-                Remove this food
-              </button>
             </div>
+
+            {/* Protein / Carbs / Fat */}
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Typography variant="label" className="text-gray-500 dark:text-gray-400 mb-1">
+                  Protein (g)
+                </Typography>
+                <input
+                  type="number"
+                  value={draftFood.protein || ""}
+                  onChange={(e) => handleDraftUpdate("protein", e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-transparent"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <Typography variant="label" className="text-gray-500 dark:text-gray-400 mb-1">
+                  Carbs (g)
+                </Typography>
+                <input
+                  type="number"
+                  value={draftFood.carbs || ""}
+                  onChange={(e) => handleDraftUpdate("carbs", e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-transparent"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <Typography variant="label" className="text-gray-500 dark:text-gray-400 mb-1">
+                  Fat (g)
+                </Typography>
+                <input
+                  type="number"
+                  value={draftFood.fat || ""}
+                  onChange={(e) => handleDraftUpdate("fat", e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-transparent"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            {/* Fiber */}
+            <div>
+              <Typography variant="label" className="text-gray-500 dark:text-gray-400 mb-1">
+                Fiber (g)
+              </Typography>
+              <input
+                type="number"
+                value={draftFood.fiber || ""}
+                onChange={(e) => handleDraftUpdate("fiber", e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary bg-transparent"
+                placeholder="0"
+              />
+            </div>
+
+            {/* Error (quick-add) */}
+            {isQuickAdd && error && (
+              <Typography variant="bodySmall" className="text-red-500 text-center">
+                {error}
+              </Typography>
+            )}
+
+            {/* Remove food */}
+            <button
+              onClick={handleDeleteFood}
+              className="w-full flex items-center justify-center gap-2 py-3 text-red-500 text-sm font-medium rounded-xl border border-red-200 dark:border-red-900/40 active:bg-red-50 dark:active:bg-red-950/20 mt-2"
+            >
+              <TrashIcon className="w-4 h-4" />
+              Remove this food
+            </button>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
@@ -581,20 +604,11 @@ function MacroBadge({
   );
 }
 
-function ScaleIcon({ className }: { className?: string }) {
+
+function ChevronLeftIcon({ className }: { className?: string }) {
   return (
-    <svg
-      className={className}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
-      />
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
     </svg>
   );
 }
