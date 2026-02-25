@@ -140,8 +140,8 @@ serve(async (req) => {
       if (!item.name || item.name.trim() === "") {
         invalidItems.push({ index: i, reason: 'Missing name' });
       }
-      if (item.weight_g <= 0) {
-        invalidItems.push({ index: i, reason: 'Weight must be positive' });
+      if (item.weight_g < 0) {
+        invalidItems.push({ index: i, reason: 'Weight cannot be negative' });
       }
       if (item.calories < 0) {
         invalidItems.push({ index: i, reason: 'Calories cannot be negative' });

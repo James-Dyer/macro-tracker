@@ -210,6 +210,19 @@ export function useCachedMeals() {
     }
   }, [fetchError]);
 
+  // Cross-component cache invalidation: ConfirmMealPage dispatches 'meals-updated'
+  // after a new/quick-add save so any mounted useCachedMeals instance refetches
+  // without prop drilling or a full navigation.
+  useEffect(() => {
+    const handleMealsUpdated = () => {
+      setCachedTodayMeals(null);
+      setCachedRecentMeals(null);
+      fetchFromServer();
+    };
+    window.addEventListener('meals-updated', handleMealsUpdated);
+    return () => window.removeEventListener('meals-updated', handleMealsUpdated);
+  }, [setCachedTodayMeals, setCachedRecentMeals, fetchFromServer]);
+
   // Get today's meals (filtered from current state)
   const getTodayMeals = useCallback((): Meal[] => {
     const today = new Date();
