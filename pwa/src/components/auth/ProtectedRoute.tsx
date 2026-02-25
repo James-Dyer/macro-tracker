@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Typography, Button, Input } from '../ui';
+import { Typography, Button, Input, MacroSummarySkeleton, MealCardSkeleton, Skeleton } from '../ui';
 import { supabase } from '../../services/supabase';
 
 export function ProtectedRoute() {
@@ -23,12 +23,19 @@ export function ProtectedRoute() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-app flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary-light border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <Typography variant="body" color="secondary">
-            Loading...
-          </Typography>
+      <div className="min-h-screen bg-app pb-24">
+        <div className="px-5 pt-4 pb-3 bg-header backdrop-blur-sm border-b border-themed sticky top-0 z-10">
+          <Typography variant="h2">Today</Typography>
+          <Skeleton className="h-3.5 w-32 mt-1" />
+        </div>
+        <div className="px-5 py-5 space-y-4">
+          <MacroSummarySkeleton />
+          <Typography variant="h3">Meals</Typography>
+          <div className="space-y-3">
+            <MealCardSkeleton />
+            <MealCardSkeleton />
+            <MealCardSkeleton />
+          </div>
         </div>
       </div>
     );

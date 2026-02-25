@@ -1,4 +1,5 @@
 import { Card } from './Card';
+import { Skeleton } from './Skeleton';
 
 /**
  * MealCard - Redesigned with better visual hierarchy
@@ -144,5 +145,36 @@ function MacroBadge({ value, type }: MacroBadgeProps) {
     >
       {config.label} {Math.round(value)}
     </div>
+  );
+}
+
+export function MealCardSkeleton() {
+  return (
+    <Card variant="elevated" padding="none" className="overflow-hidden">
+      <div className="flex gap-3 p-3 bg-elevated">
+        {/* Thumbnail placeholder */}
+        <Skeleton className="flex-shrink-0 w-20 h-20" />
+
+        {/* Content placeholder */}
+        <div className="flex-1 min-w-0">
+          {/* Time + calories row */}
+          <div className="flex items-start justify-between mb-2">
+            <Skeleton className="h-3.5 w-16" />
+            <Skeleton className="h-5 w-10" />
+          </div>
+
+          {/* Food name lines */}
+          <Skeleton className="h-3.5 w-3/4 mb-1" />
+          <Skeleton className="h-3.5 w-1/2 mb-2" />
+
+          {/* Macro badge placeholders */}
+          <div className="flex gap-1.5">
+            <Skeleton className="h-5 w-10" />
+            <Skeleton className="h-5 w-10" />
+            <Skeleton className="h-5 w-10" />
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 }

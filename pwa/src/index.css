@@ -223,6 +223,21 @@ html {
   animation: slide-up-sheet 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary) 25%,
+    var(--bg-secondary) 50%,
+    var(--bg-tertiary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
 /* Stagger delays for lists */
 .stagger-1 {
   animation-delay: 0.05s;
