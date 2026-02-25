@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, MacroSummary, MealCard, Card, SwipeableCard } from '../components/ui';
+import { Typography, MacroSummary, MacroSummarySkeleton, MealCard, MealCardSkeleton, Skeleton, Card, SwipeableCard } from '../components/ui';
 import { useCachedMeals } from '../hooks/useCachedMeals';
 import { useCachedGoals } from '../hooks/useCachedGoals';
 
@@ -50,12 +50,19 @@ export function HomePage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-app flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary-light border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <Typography variant="body" color="secondary">
-            Loading your meals...
-          </Typography>
+      <div className="min-h-screen bg-app pb-24">
+        <div className="px-5 pt-4 pb-3 bg-header backdrop-blur-sm border-b border-themed sticky top-0 z-10">
+          <Typography variant="h2">Today</Typography>
+          <Skeleton className="h-3.5 w-32 mt-1" />
+        </div>
+        <div className="px-5 py-5 space-y-4">
+          <MacroSummarySkeleton />
+          <Typography variant="h3">Meals</Typography>
+          <div className="space-y-3">
+            <MealCardSkeleton />
+            <MealCardSkeleton />
+            <MealCardSkeleton />
+          </div>
         </div>
       </div>
     );

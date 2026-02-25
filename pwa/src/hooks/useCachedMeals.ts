@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCachedStorage } from './useCachedStorage';
 import { useSignedUrls } from './useSignedUrls';
@@ -34,6 +34,12 @@ export function useCachedMeals() {
 
   // Signed URL caching
   const { getSignedUrls } = useSignedUrls(user?.id);
+
+  // Tracks whether fresh server data has been loaded at least once this session.
+  // Used to prevent the first effect from re-running (and calling setMeals again)
+  // after the second effect writes to the localStorage caches, which would cause
+  // a redundant signed-URL pass and flicker the meal cards.
+  const freshDataLoadedRef = useRef(false);
 
   // Cache for today's meals (5 min TTL)
   const {
@@ -109,13 +115,24 @@ export function useCachedMeals() {
     }));
   }, [getSignedUrls]);
 
-  // Initial load: Use cache if available, otherwise fetch
+  // Reset freshDataLoadedRef when user changes (logout / account switch)
+  useEffect(() => {
+    freshDataLoadedRef.current = false;
+  }, [user?.id]);
+
+  // Initial load: Use cache if available, otherwise wait for server fetch.
+  // This effect is skipped once fresh server data has arrived to prevent
+  // re-running (and calling setMeals with a new array) every time the second
+  // effect writes updated caches back to localStorage.
   useEffect(() => {
     if (!user) {
       setMeals([]);
       setLoading(false);
       return;
     }
+
+    // Fresh data already populates meals state; ignore subsequent cache updates
+    if (freshDataLoadedRef.current) return;
 
     // Check if we have valid cached data
     const hasTodayCache = cachedTodayMeals && !isTodayExpired();
@@ -155,23 +172,30 @@ export function useCachedMeals() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, cachedTodayMeals, cachedRecentMeals, isTodayExpired, isRecentExpired, generateSignedUrlsForMeals]);
 
-  // Update state when fresh data arrives
+  // Update state when fresh data arrives from the server.
+  // Split meals BEFORE generating signed URLs so we never generate URLs for
+  // meals older than 7 days (which the dashboard and history both exclude).
   useEffect(() => {
     if (!fetchLoading && freshMeals.length >= 0) {
-      // Fresh data arrived - generate signed URLs, then split and cache
-      generateSignedUrlsForMeals(freshMeals).then((mealsWithUrls) => {
-        const { todayMeals, recentMeals } = splitMeals(mealsWithUrls);
+      // Mark fresh data as loaded before the async work so the first effect
+      // skips its cache-reprocessing pass when setCachedTodayMeals fires.
+      freshDataLoadedRef.current = true;
 
-        setCachedTodayMeals(todayMeals);
-        setCachedRecentMeals(recentMeals);
-        setMeals(mealsWithUrls);
+      const { todayMeals, recentMeals } = splitMeals(freshMeals);
+
+      Promise.all([
+        generateSignedUrlsForMeals(todayMeals),
+        generateSignedUrlsForMeals(recentMeals),
+      ]).then(([todayWithUrls, recentWithUrls]) => {
+        setCachedTodayMeals(todayWithUrls);
+        setCachedRecentMeals(recentWithUrls);
+        setMeals([...todayWithUrls, ...recentWithUrls]);
         setLoading(false);
 
         if (import.meta.env.DEV) {
           console.log('[useCachedMeals] Cached fresh meals from server:', {
-            total: mealsWithUrls.length,
-            today: todayMeals.length,
-            recent: recentMeals.length,
+            today: todayWithUrls.length,
+            recent: recentWithUrls.length,
           });
         }
       });
@@ -185,6 +209,19 @@ export function useCachedMeals() {
       setLoading(false);
     }
   }, [fetchError]);
+
+  // Cross-component cache invalidation: ConfirmMealPage dispatches 'meals-updated'
+  // after a new/quick-add save so any mounted useCachedMeals instance refetches
+  // without prop drilling or a full navigation.
+  useEffect(() => {
+    const handleMealsUpdated = () => {
+      setCachedTodayMeals(null);
+      setCachedRecentMeals(null);
+      fetchFromServer();
+    };
+    window.addEventListener('meals-updated', handleMealsUpdated);
+    return () => window.removeEventListener('meals-updated', handleMealsUpdated);
+  }, [setCachedTodayMeals, setCachedRecentMeals, fetchFromServer]);
 
   // Get today's meals (filtered from current state)
   const getTodayMeals = useCallback((): Meal[] => {

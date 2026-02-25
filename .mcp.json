@@ -1,12 +1,10 @@
 {
     "mcpServers": {
         "supabase": {
-            "command": "npx",
+            "command": "bash",
             "args": [
-                "-y",
-                "@supabase/mcp-server-supabase@latest",
-                "--access-token",
-                "${SUPABASE_ACCESS_TOKEN}"
+                "-lc",
+                "exec env SUPABASE_ACCESS_TOKEN=\"$SUPABASE_ACCESS_TOKEN\" npx -y @supabase/mcp-server-supabase@latest"
             ]
         }
     }

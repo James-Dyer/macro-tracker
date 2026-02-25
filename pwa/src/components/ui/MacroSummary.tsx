@@ -1,5 +1,6 @@
 import { Typography } from './Typography';
 import { Card } from './Card';
+import { Skeleton } from './Skeleton';
 
 /**
  * MacroSummary component - Redesigned with circular progress rings
@@ -110,6 +111,32 @@ export function MacroSummary({
         <MacroRing {...carbs} {...macroConfig.carbs} />
         <MacroRing {...fat} {...macroConfig.fat} />
         <MacroRing {...fiber} {...macroConfig.fiber} />
+      </div>
+    </Card>
+  );
+}
+
+export function MacroSummarySkeleton() {
+  return (
+    <Card variant="elevated" padding="lg">
+      {/* Header */}
+      <Skeleton className="h-5 w-20 mb-1" />
+      <Skeleton className="h-3.5 w-24 mb-6" />
+
+      {/* Main calorie ring */}
+      <div className="flex justify-center mb-6">
+        <Skeleton className="w-[200px] h-[200px] rounded-full" />
+      </div>
+
+      {/* Macro rings grid */}
+      <div className="grid grid-cols-4 gap-3 pt-6 border-t border-themed">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex flex-col items-center">
+            <Skeleton className="w-[72px] h-[72px] rounded-full" />
+            <Skeleton className="h-3 w-10 mt-2" />
+            <Skeleton className="h-3 w-8 mt-0.5" />
+          </div>
+        ))}
       </div>
     </Card>
   );

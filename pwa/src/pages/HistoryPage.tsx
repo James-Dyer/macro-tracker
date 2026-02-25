@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Typography, MealCard, Card, SwipeableCard } from '../components/ui';
+import { Typography, MealCard, MealCardSkeleton, Skeleton, Card, SwipeableCard } from '../components/ui';
 import { useCachedMeals } from '../hooks/useCachedMeals';
 import type { Meal } from '../hooks/useMeals';
 
@@ -36,12 +36,27 @@ export function HistoryPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-app flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary-light border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <Typography variant="body" color="secondary">
-            Loading your history...
-          </Typography>
+      <div className="min-h-screen bg-app pb-24">
+        <div className="px-5 pt-4 pb-3 bg-header backdrop-blur-sm border-b border-themed sticky top-0 z-10">
+          <Typography variant="h2">History</Typography>
+          <Skeleton className="h-3.5 w-24 mt-1" />
+        </div>
+        <div className="px-5 py-5 space-y-6">
+          {[0, 1].map((i) => (
+            <div key={i}>
+              <div className="flex justify-between items-baseline mb-3">
+                <div>
+                  <Skeleton className="h-5 w-20 mb-1" />
+                  <Skeleton className="h-3.5 w-24" />
+                </div>
+                <Skeleton className="h-5 w-16" />
+              </div>
+              <div className="space-y-3">
+                <MealCardSkeleton />
+                <MealCardSkeleton />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );

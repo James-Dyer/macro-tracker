@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { useCachedStorage } from './useCachedStorage';
 import { supabase } from '../services/supabase';
 
@@ -23,10 +23,12 @@ interface SignedUrlCache {
  * - Key format: signed-url-{userId}
  * - Pre-emptive refresh: Regenerate 10 minutes before expiry
  *
- * Performance Impact:
- * - Eliminates redundant Storage API calls
- * - Batch URL generation for multiple paths
- * - Instant URL availability from cache
+ * Implementation note: Uses useRef (not useState) for the in-memory cache.
+ * useState caused a stale closure bug: parallel getSignedUrl calls all captured
+ * the same stale cache value, so each overwrote the others via setUrlCache.
+ * Only the last resolved promise survived, causing repeated refetches and a
+ * re-render cascade (urlCache change → callbacks recreated → effects re-ran).
+ * useRef reads current value at call time, making concurrent calls safe.
  *
  * Usage:
  *   const { getSignedUrl, getSignedUrls } = useSignedUrls();
@@ -34,7 +36,8 @@ interface SignedUrlCache {
  *   const urls = await getSignedUrls(['path1.jpg', 'path2.jpg']);
  */
 export function useSignedUrls(userId?: string) {
-  const [urlCache, setUrlCache] = useState<SignedUrlCache>({});
+  // Ref instead of state: no stale closures, no re-render cascade on cache updates
+  const urlCacheRef = useRef<SignedUrlCache>({});
 
   // Persistent cache in localStorage
   const { cachedData, setCachedData } = useCachedStorage<SignedUrlCache>({
@@ -42,11 +45,10 @@ export function useSignedUrls(userId?: string) {
     ttl: 50 * 60 * 1000, // 50 minutes
   });
 
-  // Load cache on mount
+  // Hydrate ref from localStorage on mount (one-time)
   useEffect(() => {
     if (cachedData) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setUrlCache(cachedData);
+      urlCacheRef.current = cachedData;
 
       if (import.meta.env.DEV) {
         console.log('[useSignedUrls] Loaded URL cache:', Object.keys(cachedData).length, 'entries');
@@ -54,31 +56,25 @@ export function useSignedUrls(userId?: string) {
     }
   }, [cachedData]);
 
-  // Check if URL is still valid (not expired or close to expiry) - memoized
+  // Check if URL is still valid - reads ref directly, always current
   const isUrlValid = useCallback((path: string): boolean => {
-    const cached = urlCache[path];
+    const cached = urlCacheRef.current[path];
     if (!cached) return false;
-
-    const now = Date.now();
-    const timeUntilExpiry = cached.expiresAt - now;
-
     // Consider expired if less than 10 minutes remaining
-    return timeUntilExpiry > 10 * 60 * 1000;
-  }, [urlCache]);
+    return (cached.expiresAt - Date.now()) > 10 * 60 * 1000;
+  }, []); // No deps: ref access is always current, no closure capture needed
 
-  // Get single signed URL (from cache or generate new) - memoized
+  // Get single signed URL (from cache or generate new)
   const getSignedUrl = useCallback(async (path: string | null | undefined): Promise<string | null> => {
     if (!path) return null;
 
-    // Check cache first
     if (isUrlValid(path)) {
       if (import.meta.env.DEV) {
         console.log('[useSignedUrls] Cache hit:', path);
       }
-      return urlCache[path].url;
+      return urlCacheRef.current[path].url;
     }
 
-    // Generate new signed URL
     try {
       const { data, error } = await supabase.storage
         .from('meal-photos')
@@ -89,17 +85,16 @@ export function useSignedUrls(userId?: string) {
         return null;
       }
 
-      // Update cache
-      const newCache = {
-        ...urlCache,
+      // Mutate ref directly: concurrent calls each read the latest ref.current,
+      // so parallel fetches accumulate correctly instead of overwriting each other.
+      urlCacheRef.current = {
+        ...urlCacheRef.current,
         [path]: {
           url: data.signedUrl,
-          expiresAt: Date.now() + 3600 * 1000, // 1 hour from now
+          expiresAt: Date.now() + 3600 * 1000,
         },
       };
-
-      setUrlCache(newCache);
-      setCachedData(newCache);
+      setCachedData(urlCacheRef.current);
 
       if (import.meta.env.DEV) {
         console.log('[useSignedUrls] Generated and cached URL:', path);
@@ -110,63 +105,47 @@ export function useSignedUrls(userId?: string) {
       console.error('[useSignedUrls] Error generating signed URL:', error);
       return null;
     }
-  }, [isUrlValid, urlCache, setCachedData]);
+  }, [isUrlValid, setCachedData]); // Stable: no urlCache state dep
 
-  // Get multiple signed URLs (batch operation) - memoized
+  // Get multiple signed URLs (batch operation)
   const getSignedUrls = useCallback(async (paths: (string | null | undefined)[]): Promise<(string | null)[]> => {
-    const validPaths = paths.filter((p): p is string => Boolean(p));
     const results: (string | null)[] = new Array(paths.length).fill(null);
+    const toGenerate: { path: string; index: number }[] = [];
+    let cacheHitCount = 0;
 
-    // Check which URLs need generation
-    const toGenerate: string[] = [];
-    const cacheHits: Map<string, string> = new Map();
-
-    validPaths.forEach((path) => {
+    paths.forEach((path, index) => {
+      if (!path) return;
       if (isUrlValid(path)) {
-        cacheHits.set(path, urlCache[path].url);
+        results[index] = urlCacheRef.current[path].url;
+        cacheHitCount++;
       } else {
-        toGenerate.push(path);
+        toGenerate.push({ path, index });
       }
     });
 
     if (import.meta.env.DEV) {
       console.log('[useSignedUrls] Batch request:', {
-        total: validPaths.length,
-        cacheHits: cacheHits.size,
+        total: paths.filter(Boolean).length,
+        cacheHits: cacheHitCount,
         toGenerate: toGenerate.length,
       });
     }
 
-    // Generate missing URLs
     if (toGenerate.length > 0) {
-      const generated = await Promise.all(
-        toGenerate.map(async (path) => {
+      await Promise.all(
+        toGenerate.map(async ({ path, index }) => {
           const url = await getSignedUrl(path);
-          return { path, url };
+          results[index] = url;
         })
       );
-
-      // Add generated URLs to cache hits
-      generated.forEach(({ path, url }) => {
-        if (url) {
-          cacheHits.set(path, url);
-        }
-      });
     }
 
-    // Map results back to original order
-    paths.forEach((path, index) => {
-      if (path && cacheHits.has(path)) {
-        results[index] = cacheHits.get(path)!;
-      }
-    });
-
     return results;
-  }, [isUrlValid, getSignedUrl]);
+  }, [isUrlValid, getSignedUrl]); // Both stable now
 
-  // Clear cache (useful for logout) - memoized
+  // Clear cache (useful for logout)
   const clearCache = useCallback(() => {
-    setUrlCache({});
+    urlCacheRef.current = {};
     setCachedData(null);
 
     if (import.meta.env.DEV) {

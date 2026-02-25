@@ -70,35 +70,10 @@ export function useMeals() {
 
       if (fetchError) throw fetchError;
 
-      // Generate signed URLs for thumbnails only (fallback to full photo for old meals)
-      const mealsWithSignedUrls = await Promise.all(
-        (data || []).map(async (meal) => {
-          // Prefer thumbnail, fallback to full photo for backward compatibility
-          const pathToSign = meal.thumbnail_path || meal.photo_path;
-
-          if (!pathToSign) {
-            return meal;
-          }
-
-          const { data: signedData, error: signError } = await supabase.storage
-            .from("meal-photos")
-            .createSignedUrl(pathToSign, 3600); // 3600 seconds = 1 hour
-
-          if (signError || !signedData?.signedUrl) {
-            console.warn(`Failed to generate signed URL for meal ${meal.id}:`, signError);
-            return meal;
-          }
-
-          // Store signed URL in thumbnail_url (MealCard prefers this)
-          return {
-            ...meal,
-            thumbnail_url: signedData.signedUrl,
-            // Don't generate photo_url to save API calls - only needed for detail view
-          };
-        })
-      );
-
-      setMeals(mealsWithSignedUrls as Meal[]);
+      // Return raw meal data without signed URLs.
+      // useCachedMeals handles signed URL generation via useSignedUrls,
+      // which caches URLs and only generates them for today + 7-day meals.
+      setMeals((data || []) as Meal[]);
     } catch (err) {
       console.error("Error fetching meals:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch meals");
