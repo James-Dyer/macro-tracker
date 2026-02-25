@@ -88,6 +88,9 @@ export function LoginPage() {
         }
 
         const userId = signUpData.user?.id;
+        // When email verification is disabled, Supabase returns a session immediately.
+        // When it's enabled, session is null and the user must confirm via email first.
+        const sessionCreated = !!signUpData.session;
 
         // Step 2: If invite code present, attempt redemption
         if (inviteCode && userId) {
@@ -96,15 +99,24 @@ export function LoginPage() {
           const tier = await redeemInvite(inviteCode, userId);
 
           if (tier) {
-            // Redemption successful - remove pending code
             localStorage.removeItem('pendingInviteCode');
+            if (sessionCreated) {
+              // Already logged in — navigate straight to the app
+              navigate('/dashboard', { replace: true });
+              return;
+            }
             setMessage(`Account created! You now have ${tier === 'beta' ? 'Beta' : 'Premium'} access. Check your email to confirm.`);
           } else {
-            // Redemption failed after account creation (rare race condition).
-            // Don't show a success message — the redemptionError from the hook
-            // already explains what went wrong. Just confirm the account exists.
+            if (sessionCreated) {
+              navigate('/dashboard', { replace: true });
+              return;
+            }
             setMessage('Account created! Check your email to confirm, then enter your invite code when you log in.');
           }
+        } else if (sessionCreated) {
+          // No invite code, but already logged in — go straight to the app
+          navigate('/dashboard', { replace: true });
+          return;
         } else {
           setMessage('Check your email to confirm your account!');
         }
@@ -254,12 +266,6 @@ export function LoginPage() {
             />
           </form>
 
-          {/* Additional Info for Signup */}
-          {mode === 'signup' && (
-            <Typography variant="caption" color="tertiary" className="mt-4 text-center block">
-              By signing up, you'll receive a confirmation email to verify your account
-            </Typography>
-          )}
         </Card>
 
         {/* Footer */}
