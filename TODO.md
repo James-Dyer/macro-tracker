@@ -29,3 +29,6 @@ Big task: replace all loading screens with more UX friendly skeleton loading scr
 FEAT-2
 Daily goal isnt beng cached, it should be cached like the rest of the home page/user info is.
 Lets review our caching policies and make sure they all make sense first before implementing this.
+
+UX-1
+implement swipe right to delete instead of a dedicated button for food entries
