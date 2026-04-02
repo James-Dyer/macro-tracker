@@ -136,7 +136,7 @@ export async function generateThumbnail(
 export async function uploadMealPhoto(
   file: File,
   userId: string
-): Promise<{ path: string; thumbnailPath: string } | { error: string }> {
+): Promise<{ path: string; thumbnailPath: string; thumbnailSize: number } | { error: string }> {
   try {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 9);
@@ -173,12 +173,14 @@ export async function uploadMealPhoto(
       return {
         path: fullData.path,
         thumbnailPath: fullData.path,
+        thumbnailSize: file.size,
       };
     }
 
     return {
       path: fullData.path,
       thumbnailPath: thumbData.path,
+      thumbnailSize: thumbnail.size,
     };
   } catch (err) {
     console.error("Unexpected upload error:", err);

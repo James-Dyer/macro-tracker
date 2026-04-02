@@ -127,6 +127,16 @@ export function LogMealPage() {
         throw new Error(uploadResult.error);
       }
 
+      // Log compression effectiveness metrics
+      const toKB = (bytes: number) => (bytes / 1024).toFixed(1);
+      const reductionPct = (original: number, compressed: number) =>
+        (((original - compressed) / original) * 100).toFixed(1);
+      logger.info('Image compression stats', {
+        original:   `${toKB(file.size)} KB`,
+        full:       `${toKB(compressedFile.size)} KB (${reductionPct(file.size, compressedFile.size)}% reduction)`,
+        thumbnail:  `${toKB(uploadResult.thumbnailSize)} KB (${reductionPct(file.size, uploadResult.thumbnailSize)}% reduction)`,
+      });
+
       // Check if this analysis was cancelled
       if (analyzeRunId.current !== runId) return;
 
