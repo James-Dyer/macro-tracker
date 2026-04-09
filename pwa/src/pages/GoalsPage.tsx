@@ -1,20 +1,22 @@
-import { Typography, Card, Button, Input } from '../components/ui';
+import { Typography, Card, Button } from '../components/ui';
 import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCachedGoals } from '../hooks/useCachedGoals';
 
 /**
- * GoalsPage - Daily macro goals management
+ * GoalsPage - Daily macro goals display
  *
- * Features:
- * - Daily macro goals with color-coded indicators (persisted to Supabase)
- * - Clean visual hierarchy with staggered animations
+ * Goals are view-only here. Tap "Edit Goals" to open the full
+ * calculator (OnboardingGoalsPage in edit mode), which navigates
+ * back here with { goalsUpdated: true } so the cache is refreshed.
  */
 
 export function GoalsPage() {
-  const { goals, loading, saveGoals } = useCachedGoals();
-  const [isSaving, setIsSaving] = useState(false);
+  const { goals, loading, refetch } = useCachedGoals();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Form state initialized from goals
+  // Form data kept in state so we can pass current values to the calculator
   const [formData, setFormData] = useState({
     calories: 2000,
     protein: 150,
@@ -23,7 +25,7 @@ export function GoalsPage() {
     fiber: 30,
   });
 
-  // Update form when goals load
+  // Sync display values when goals load from cache/server
   useEffect(() => {
     if (goals) {
       setFormData({
@@ -36,17 +38,22 @@ export function GoalsPage() {
     }
   }, [goals]);
 
-  const handleSaveGoals = async () => {
-    setIsSaving(true);
-    try {
-      await saveGoals(formData);
-      console.log('Goals saved successfully');
-    } catch (err) {
-      console.error('Failed to save goals:', err);
-    } finally {
-      setIsSaving(false);
+  // When returning from the calculator after a save, refresh the cache
+  // then wipe the state flag so repeated back-navigation doesn't re-trigger
+  useEffect(() => {
+    if ((location.state as { goalsUpdated?: boolean } | null)?.goalsUpdated) {
+      refetch();
+      navigate(location.pathname, { replace: true });
     }
-  };
+  }, [location.state, location.pathname, navigate, refetch]);
+
+  const macroRows = [
+    { label: 'Calories', value: `${formData.calories} kcal`, colorClass: 'bg-primary' },
+    { label: 'Protein',  value: `${formData.protein}g`,      colorClass: 'bg-protein' },
+    { label: 'Carbs',    value: `${formData.carbs}g`,        colorClass: 'bg-carbs'   },
+    { label: 'Fat',      value: `${formData.fat}g`,          colorClass: 'bg-fat'     },
+    { label: 'Fiber',    value: `${formData.fiber}g`,        colorClass: 'bg-fiber'   },
+  ];
 
   return (
     <div className="min-h-screen bg-app pb-24">
@@ -56,12 +63,11 @@ export function GoalsPage() {
           Daily Goals
         </Typography>
         <Typography variant="bodySmall" color="secondary" className="mt-0.5">
-          Customize your daily targets
+          Your current nutrition targets
         </Typography>
       </div>
 
       <div className="px-5 py-5">
-        {/* Daily Goals */}
         <Card variant="elevated" padding="lg" className="animate-slide-up stagger-1">
           <div className="flex items-center justify-between mb-5 pb-4 border-b border-themed">
             <Typography variant="h3">
@@ -75,100 +81,34 @@ export function GoalsPage() {
             </div>
           </div>
 
-          <div className="space-y-5">
-            {/* Calories - Full width with green accent */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-3 h-3 rounded-full bg-primary" />
-                <Typography variant="label" className="text-gray-700">
-                  Calories
+          {/* Read-only macro rows */}
+          <div className="space-y-4 mb-6">
+            {macroRows.map(({ label, value, colorClass }) => (
+              <div key={label} className="flex items-center justify-between py-1">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-3 h-3 rounded-full flex-shrink-0 ${colorClass}`} />
+                  <Typography variant="body" className="text-themed">
+                    {label}
+                  </Typography>
+                </div>
+                <Typography variant="body" className="tabular-nums font-semibold text-themed">
+                  {loading ? '—' : value}
                 </Typography>
               </div>
-              <Input
-                type="number"
-                value={formData.calories.toString()}
-                onChange={(e) => setFormData({ ...formData, calories: parseInt(e.target.value) || 0 })}
-                placeholder="2000"
-                disabled={loading}
-              />
-            </div>
-
-            {/* Macros - 2x2 grid with color indicators */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 rounded-full bg-protein" />
-                  <Typography variant="label" className="text-gray-700">
-                    Protein (g)
-                  </Typography>
-                </div>
-                <Input
-                  type="number"
-                  value={formData.protein.toString()}
-                  onChange={(e) => setFormData({ ...formData, protein: parseInt(e.target.value) || 0 })}
-                  placeholder="150"
-                  disabled={loading}
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 rounded-full bg-carbs" />
-                  <Typography variant="label" className="text-gray-700">
-                    Carbs (g)
-                  </Typography>
-                </div>
-                <Input
-                  type="number"
-                  value={formData.carbs.toString()}
-                  onChange={(e) => setFormData({ ...formData, carbs: parseInt(e.target.value) || 0 })}
-                  placeholder="250"
-                  disabled={loading}
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 rounded-full bg-fat" />
-                  <Typography variant="label" className="text-gray-700">
-                    Fat (g)
-                  </Typography>
-                </div>
-                <Input
-                  type="number"
-                  value={formData.fat.toString()}
-                  onChange={(e) => setFormData({ ...formData, fat: parseInt(e.target.value) || 0 })}
-                  placeholder="65"
-                  disabled={loading}
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 rounded-full bg-fiber" />
-                  <Typography variant="label" className="text-gray-700">
-                    Fiber (g)
-                  </Typography>
-                </div>
-                <Input
-                  type="number"
-                  value={formData.fiber.toString()}
-                  onChange={(e) => setFormData({ ...formData, fiber: parseInt(e.target.value) || 0 })}
-                  placeholder="30"
-                  disabled={loading}
-                />
-              </div>
-            </div>
-
-            <Button
-              title={isSaving ? 'Saving...' : 'Save Goals'}
-              onClick={handleSaveGoals}
-              loading={isSaving}
-              disabled={loading || isSaving}
-              size="lg"
-              fullWidth
-            />
+            ))}
           </div>
+
+          <Button
+            title="Edit Goals"
+            onClick={() =>
+              navigate('/dashboard/onboarding/goals', {
+                state: { editMode: true, currentGoals: formData },
+              })
+            }
+            disabled={loading}
+            size="lg"
+            fullWidth
+          />
         </Card>
       </div>
     </div>

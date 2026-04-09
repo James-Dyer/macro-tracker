@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Typography, Input, Button, Card, ButtonGroup, Slider } from '../../components/ui';
 import { useGoals } from '../../hooks/useGoals';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,10 +15,26 @@ import {
 
 type Mode = 'recommended' | 'manual';
 
+interface EditGoalsState {
+  editMode: true;
+  currentGoals: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+  };
+}
+
 export function OnboardingGoalsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { saveGoals, loading: savingGoals } = useGoals();
   const { refetchOnboarding } = useAuth();
+
+  // Detect whether we were launched from the Goals page in edit mode
+  const editState = location.state as EditGoalsState | null;
+  const isEditMode = editState?.editMode === true;
 
   // Mode state
   const [mode, setMode] = useState<Mode>('recommended');
@@ -37,12 +53,12 @@ export function OnboardingGoalsPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [proteinBias, setProteinBias] = useState(0.30);
 
-  // Manual mode state
-  const [manualCalories, setManualCalories] = useState(2000);
-  const [manualProtein, setManualProtein] = useState(150);
-  const [manualCarbs, setManualCarbs] = useState(200);
-  const [manualFat, setManualFat] = useState(65);
-  const [manualFiber, setManualFiber] = useState(25);
+  // Manual mode state — pre-filled from current goals when launched in edit mode
+  const [manualCalories, setManualCalories] = useState(editState?.currentGoals?.calories ?? 2000);
+  const [manualProtein, setManualProtein]   = useState(editState?.currentGoals?.protein  ?? 150);
+  const [manualCarbs, setManualCarbs]       = useState(editState?.currentGoals?.carbs    ?? 200);
+  const [manualFat, setManualFat]           = useState(editState?.currentGoals?.fat      ?? 65);
+  const [manualFiber, setManualFiber]       = useState(editState?.currentGoals?.fiber    ?? 25);
 
   // Calculate recommended macros
   const calculatedMacros = useMemo(() => {
@@ -79,17 +95,17 @@ export function OnboardingGoalsPage() {
         };
 
     try {
-      console.log('[STATE DEBUG] OnboardingGoalsPage: Saving goals...');
       await saveGoals(macros);
 
-      console.log('[STATE DEBUG] OnboardingGoalsPage: Calling refetch...');
-      await refetchOnboarding();
-
-      console.log('[STATE DEBUG] OnboardingGoalsPage: Navigating to how-it-works');
-      navigate('/dashboard/onboarding/how-it-works');
+      if (isEditMode) {
+        // Return to Goals page and signal it to refresh the cache
+        navigate('/dashboard/goals', { state: { goalsUpdated: true } });
+      } else {
+        await refetchOnboarding();
+        navigate('/dashboard/onboarding/how-it-works');
+      }
     } catch (error) {
       console.error('Failed to save goals:', error);
-      // Error is shown via useGoals error state
     }
   };
 
@@ -99,10 +115,12 @@ export function OnboardingGoalsPage() {
       <div className="sticky top-0 z-10 bg-header backdrop-blur-md border-b border-themed shadow-sm">
         <div className="max-w-2xl mx-auto px-6 py-6">
           <Typography variant="h2" className="text-center">
-            Set Your Daily Goals
+            {isEditMode ? 'Update Your Goals' : 'Set Your Daily Goals'}
           </Typography>
           <Typography variant="bodySmall" color="secondary" className="text-center mt-2">
-            Personalized nutrition targets to help you succeed
+            {isEditMode
+              ? 'Adjust your targets using the calculator or enter them manually'
+              : 'Personalized nutrition targets to help you succeed'}
           </Typography>
         </div>
       </div>
@@ -489,10 +507,20 @@ export function OnboardingGoalsPage() {
       </div>
 
       {/* Fixed Bottom CTA */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-200 safe-area-pb">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-200 safe-area-pb dark:bg-gray-900/90 dark:border-gray-700">
         <div className="max-w-2xl mx-auto px-6 py-4">
+          {isEditMode && (
+            <Button
+              title="Cancel"
+              variant="secondary"
+              size="lg"
+              fullWidth
+              onClick={() => navigate('/dashboard/goals')}
+              className="mb-2"
+            />
+          )}
           <Button
-            title={savingGoals ? 'Saving...' : 'Continue'}
+            title={savingGoals ? 'Saving...' : isEditMode ? 'Save Goals' : 'Continue'}
             onClick={handleContinue}
             disabled={savingGoals}
             fullWidth
