@@ -1,262 +1,324 @@
 import { useNavigate } from 'react-router';
 import { Button } from '../components/ui/Button';
-import { useEffect, useState } from 'react';
 
-/**
- * LandingPage - Marketing page for MacroTracker
- *
- * Aesthetic: "Precision Tech" - Bold typography, data-driven visuals,
- * subtle grid patterns, and smooth orchestrated animations.
- * Emphasizes accuracy and AI intelligence without feeling generic.
- */
+const LINKEDIN_INVITE_URL = 'https://www.linkedin.com/in/jamesthedyer/';
+
+const productShots = [
+  {
+    src: '/landing/demo-shot-1.jpg',
+    alt: 'MacroTracker onboarding and setup screen',
+    label: 'Onboarding',
+  },
+  {
+    src: '/landing/demo-shot-2.jpg',
+    alt: 'MacroTracker meal logging flow',
+    label: 'Meal Capture',
+  },
+  {
+    src: '/landing/demo-shot-3.jpg',
+    alt: 'MacroTracker meal history and nutrition review',
+    label: 'Review',
+  },
+];
+
+const betaSteps = [
+  {
+    number: '01',
+    title: 'Request Invite',
+    description: 'Reach out on LinkedIn to get added to the closed beta list.',
+  },
+  {
+    number: '02',
+    title: 'Get Your Code',
+    description: 'You will receive an invite code once you are approved for testing.',
+  },
+  {
+    number: '03',
+    title: 'Start Logging',
+    description: 'Use your invite to sign up, test the flow, and send feedback.',
+  },
+];
 
 export function LandingPage() {
   const navigate = useNavigate();
-  const [isVisible, setIsVisible] = useState(false);
 
-  useEffect(() => {
-    // Trigger animations after mount
-    setIsVisible(true);
-  }, []);
+  const handleInviteCTA = () => {
+    window.open(LINKEDIN_INVITE_URL, '_blank', 'noopener,noreferrer');
+  };
 
-  const handleCTA = () => {
+  const handleInvitedCTA = () => {
     navigate('/login?mode=signup');
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white overflow-hidden relative">
-      {/* Subtle grid background */}
-      <div className="absolute inset-0 opacity-[0.03]"
-           style={{
-             backgroundImage: `
-               linear-gradient(to right, #22c55e 1px, transparent 1px),
-               linear-gradient(to bottom, #22c55e 1px, transparent 1px)
-             `,
-             backgroundSize: '40px 40px'
-           }}
+    <div className="min-h-screen overflow-hidden bg-gray-950 text-white relative">
+      <div
+        className="absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, #22c55e 1px, transparent 1px),
+            linear-gradient(to bottom, #22c55e 1px, transparent 1px)
+          `,
+          backgroundSize: '40px 40px',
+        }}
       />
+      <div className="absolute left-1/2 top-0 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-primary-light/10 blur-[140px]" />
 
-      {/* Hero Section */}
-      <section className="relative px-6 pt-16 pb-24 md:pt-24 md:pb-32">
-        <div className="max-w-6xl mx-auto">
-          {/* Logo/Brand */}
-          <div className={`mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
+      <section className="relative px-6 pt-12 pb-20 md:pt-20 md:pb-28">
+        <div className="mx-auto max-w-6xl">
+          <div className="animate-fade-in mb-14 flex items-center justify-between gap-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary-light flex items-center justify-center">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light text-gray-950 shadow-lg shadow-primary-light/20">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M12 2L2 7L12 12L22 7L12 2Z" />
                   <path d="M2 17L12 22L22 17" />
                   <path d="M2 12L12 17L22 12" />
                 </svg>
               </div>
-              <span className="text-xl font-bold tracking-tight">MacroTracker</span>
+              <div>
+                <div className="text-lg font-bold tracking-tight">MacroTracker</div>
+                <div className="text-sm text-gray-400">Closed beta nutrition tracker</div>
+              </div>
             </div>
+
+            <a
+              href={LINKEDIN_INVITE_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="hidden rounded-full border border-gray-700 bg-gray-900/70 px-4 py-2 text-sm font-medium text-gray-200 transition hover:border-primary-light/40 hover:text-white md:inline-flex"
+            >
+              Request Invite
+            </a>
           </div>
 
-          {/* Hero Content */}
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="grid items-center gap-14 md:grid-cols-[1.05fr_0.95fr]">
             <div className="space-y-8">
-              <div className={`space-y-4 transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                <div className="inline-block px-4 py-1.5 rounded-full bg-primary-light/10 border border-primary-light/20 text-primary-light text-sm font-medium">
-                  AI-Powered Nutrition
+              <div className="animate-slide-up space-y-5">
+                <div className="inline-flex items-center gap-2 rounded-full border border-primary-light/30 bg-primary-light/10 px-4 py-1.5 text-sm font-medium text-primary-light">
+                  <span className="h-2 w-2 rounded-full bg-primary-light" />
+                  Closed beta. Invite required.
                 </div>
-                <h1 className="text-5xl md:text-7xl font-bold leading-[0.95] tracking-tight">
-                  Track macros<br />
-                  <span className="text-primary-light">with precision</span>
+
+                <h1 className="max-w-3xl text-5xl font-bold leading-[0.94] tracking-tight md:text-7xl">
+                  Snap meals.
+                  <br />
+                  <span className="text-primary-light">Check macros fast.</span>
                 </h1>
-                <p className="text-xl text-gray-300 leading-relaxed max-w-lg">
-                  Take one photo of your meal. AI instantly identifies your food, estimates portions, and calculates complete nutrition data—all in seconds.
+
+                <p className="max-w-xl text-lg leading-relaxed text-gray-300 md:text-xl">
+                  MacroTracker is a photo-first nutrition app for beta testers who want a faster way to log meals. Take a photo, review the AI estimate, and save your macros without digging through food databases.
                 </p>
               </div>
 
-              <div className={`flex flex-col sm:flex-row gap-4 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+              <div className="animate-slide-up stagger-1 flex flex-col gap-4 sm:flex-row">
                 <Button
-                  title="Start tracking free"
-                  onClick={handleCTA}
+                  title="Request An Invite"
+                  onClick={handleInviteCTA}
                   size="lg"
-                  className="!bg-primary-light hover:!bg-primary active:!bg-primary-dark text-lg"
+                  className="!bg-primary-light !text-gray-950 hover:!bg-[#4ade80] active:!bg-primary text-lg shadow-lg shadow-primary-light/20"
                 />
                 <button
-                  onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="px-8 py-4 min-h-[56px] rounded-xl border-2 border-gray-700 text-gray-200 hover:border-gray-600 hover:bg-gray-800/50 transition-all font-semibold text-lg"
+                  onClick={handleInvitedCTA}
+                  className="min-h-[56px] rounded-xl border-2 border-gray-700 px-8 py-4 text-lg font-semibold text-gray-200 transition hover:border-gray-500 hover:bg-gray-900/70"
                 >
-                  See how it works
+                  I Have An Invite Code
                 </button>
               </div>
 
-              {/* Social Proof */}
-              <div className={`flex items-center gap-6 pt-4 transition-all duration-700 delay-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
-                <div className="flex -space-x-3">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-light to-primary border-2 border-gray-900 flex items-center justify-center text-sm font-bold">
-                      {String.fromCharCode(64 + i)}
-                    </div>
-                  ))}
+              <div className="animate-slide-up stagger-2 grid gap-4 sm:grid-cols-3">
+                <StatCard value="Closed Beta" label="Current access model" />
+                <StatCard value="Photo First" label="Core logging flow" />
+                <StatCard value="Invite Only" label="For active testers" />
+              </div>
+
+              <div className="animate-slide-up stagger-3 rounded-2xl border border-gray-800 bg-gray-900/70 p-5 backdrop-blur">
+                <div className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-primary-light">
+                  What To Expect
                 </div>
-                <div className="text-sm text-gray-400">
-                  <span className="text-white font-semibold">1,200+</span> people tracking with precision
-                </div>
+                <p className="text-gray-300">
+                  This is a testing build, not a public launch. If you want access, request an invite on LinkedIn. If you already have a code, use it to sign up and start testing immediately.
+                </p>
               </div>
             </div>
 
-            {/* Hero Visual */}
-            <div className={`relative transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-              <HeroVisual />
+            <div className="animate-scale-in">
+              <HeroMedia />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Key Benefits Section */}
-      <section className="relative px-6 py-24 bg-gray-800/30 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              No more guessing.<br />
-              <span className="text-primary-light">Just results.</span>
+      <section className="relative border-y border-gray-900 bg-gray-900/70 px-6 py-20 backdrop-blur-sm">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-12 max-w-2xl">
+            <div className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary-light">
+              Why People Want It
+            </div>
+            <h2 className="text-4xl font-bold tracking-tight md:text-5xl">
+              Faster than manual tracking, without pretending it is finished.
             </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Stop estimating portions and scrolling through food databases. Get instant results with zero manual entry.
-            </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid gap-6 md:grid-cols-3">
             <BenefitCard
               icon={<ZapIcon />}
-              title="Instant Tracking"
-              description="One photo, complete nutrition. Log meals in under 10 seconds—no typing, no searching, no equipment."
-              delay="delay-[100ms]"
+              title="Fast Capture"
+              description="Log a meal from a single photo instead of searching and entering each ingredient by hand."
             />
             <BenefitCard
               icon={<BrainIcon />}
-              title="Vision AI"
-              description="Gemini Pro identifies foods instantly. Rice, chicken, veggies—all recognized with context-aware precision."
-              delay="delay-[200ms]"
+              title="Editable AI Estimates"
+              description="The app gives you a starting point fast, then lets you review and adjust before saving."
             />
             <BenefitCard
               icon={<ChartIcon />}
-              title="Complete Data"
-              description="Calories, protein, carbs, fat, fiber—calculated automatically from visual analysis, no manual entry."
-              delay="delay-[300ms]"
+              title="Useful Macro View"
+              description="Calories, protein, carbs, fat, and fiber are summarized in a way that is easy to scan during the day."
             />
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="relative px-6 py-24">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Ten seconds to<br />
-              <span className="text-primary-light">complete nutrition</span>
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 md:gap-4">
-            <StepCard
-              number="01"
-              title="Snap Photo"
-              description="Take a quick picture of your meal—that's it"
-              delay="delay-[100ms]"
-            />
-            <StepCard
-              number="02"
-              title="AI Analyzes"
-              description="Vision AI instantly identifies foods and estimates portions"
-              delay="delay-[200ms]"
-            />
-            <StepCard
-              number="03"
-              title="Done"
-              description="Review complete macros and save—all in under 10 seconds"
-              delay="delay-[300ms]"
-            />
-          </div>
-
-          {/* Demo Screenshot Placeholder */}
-          <div className="mt-16 relative">
-            <div className="aspect-[16/10] rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 overflow-hidden relative">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center space-y-4">
-                  <div className="w-20 h-20 mx-auto rounded-full bg-primary-light/10 border-2 border-primary-light/30 flex items-center justify-center">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 16V12M12 8H12.01" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-400 text-lg">App interface preview</p>
-                </div>
+      <section id="how-it-works" className="relative px-6 py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-12 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl">
+              <div className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary-light">
+                Beta Access
               </div>
-              {/* Simulated phone frames */}
-              <div className="absolute bottom-8 left-8 w-64 h-[520px] bg-gray-950 rounded-3xl border-4 border-gray-800 shadow-2xl opacity-90 transform -rotate-6" />
-              <div className="absolute bottom-8 right-8 w-64 h-[520px] bg-gray-950 rounded-3xl border-4 border-gray-800 shadow-2xl opacity-90 transform rotate-6" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Differentiator Section */}
-      <section className="relative px-6 py-24 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
-        <div className="max-w-4xl mx-auto">
-          <div className="relative rounded-2xl border-2 border-primary-light/20 bg-gray-900/50 backdrop-blur p-12 overflow-hidden">
-            {/* Glow effect */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary-light/5 blur-[100px] rounded-full" />
-
-            <div className="relative space-y-6 text-center">
-              <div className="inline-block px-5 py-2 rounded-full bg-primary-light/10 border border-primary-light/30 text-primary-light text-sm font-semibold">
-                The MacroTracker Difference
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold leading-tight">
-                One photo beats<br />
-                tedious manual entry every time
+              <h2 className="text-4xl font-bold tracking-tight md:text-5xl">
+                Clear path in, clear expectations.
               </h2>
-              <p className="text-lg text-gray-300 max-w-2xl mx-auto leading-relaxed">
-                While other apps make you search databases, type food names, and manually enter portions, MacroTracker gives you <span className="text-white font-semibold">complete nutrition in 10 seconds</span>. Just snap and track—no typing, no searching, no equipment needed.
-              </p>
             </div>
+            <p className="max-w-xl text-gray-400">
+              The landing page now matches the product state: closed beta for testing, invite required, real product visuals, no inflated claims.
+            </p>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-3">
+            {betaSteps.map((step) => (
+              <StepCard
+                key={step.number}
+                number={step.number}
+                title={step.title}
+                description={step.description}
+              />
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="relative px-6 py-24">
-        <div className="max-w-3xl mx-auto text-center space-y-8">
-          <h2 className="text-4xl md:text-6xl font-bold leading-tight">
-            Stop guessing.<br />
-            <span className="text-primary-light">Start knowing.</span>
-          </h2>
-          <p className="text-xl text-gray-300 max-w-xl mx-auto">
-            Join thousands tracking nutrition with precision. Free to start, no credit card required.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Button
-              title="Get started free"
-              onClick={handleCTA}
-              size="lg"
-              className="!bg-primary-light hover:!bg-primary active:!bg-primary-dark text-lg"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="relative px-6 py-12 border-t border-gray-800">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-primary-light flex items-center justify-center">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M12 2L2 7L12 12L22 7L12 2Z" />
-                  <path d="M2 17L12 22L22 17" />
-                  <path d="M2 12L12 17L22 12" />
-                </svg>
+      <section className="relative px-6 pb-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <div className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary-light">
+                Product Preview
               </div>
-              <span className="font-semibold">MacroTracker</span>
+              <h2 className="text-4xl font-bold tracking-tight md:text-5xl">
+                Real screens from the current build.
+              </h2>
             </div>
-            <div className="text-sm text-gray-400">
-              © 2026 MacroTracker. AI-powered precision nutrition.
+            <p className="max-w-xl text-gray-400">
+              These are pulled from your current app recording and thumbnail rather than placeholders.
+            </p>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="overflow-hidden rounded-[2rem] border border-gray-800 bg-gray-950 shadow-2xl shadow-black/40">
+              <video
+                className="h-full w-full object-cover"
+                src="/landing/app-demo.mp4"
+                poster="/landing/demo-shot-2.jpg"
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
             </div>
+
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="overflow-hidden rounded-[2rem] border border-gray-800 bg-gray-900/70">
+                <img
+                  src="/landing/macro-thumbnail.jpg"
+                  alt="MacroTracker summary thumbnail"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-3">
+                {productShots.map((shot) => (
+                  <figure
+                    key={shot.src}
+                    className="overflow-hidden rounded-[1.5rem] border border-gray-800 bg-gray-900/70"
+                  >
+                    <img
+                      src={shot.src}
+                      alt={shot.alt}
+                      className="aspect-[9/16] h-full w-full object-cover"
+                    />
+                    <figcaption className="border-t border-gray-800 px-3 py-2 text-center text-xs font-medium uppercase tracking-[0.18em] text-gray-400">
+                      {shot.label}
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative px-6 pb-24">
+        <div className="mx-auto max-w-4xl overflow-hidden rounded-[2rem] border border-primary-light/20 bg-gradient-to-br from-primary-light/10 via-gray-900 to-gray-950 p-10 text-center shadow-2xl shadow-primary-light/5 md:p-14">
+          <div className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary-light">
+            Closed Beta CTA
+          </div>
+          <h2 className="text-4xl font-bold tracking-tight md:text-6xl">
+            Want to test MacroTracker?
+          </h2>
+          <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-gray-300">
+            Request an invite on LinkedIn if you want access to the beta. If you already have a code, head to signup and unlock the app there.
+          </p>
+          <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
+            <Button
+              title="Request Invite On LinkedIn"
+              onClick={handleInviteCTA}
+              size="lg"
+              className="!bg-primary-light !text-gray-950 hover:!bg-[#4ade80] active:!bg-primary text-lg"
+            />
+            <button
+              onClick={handleInvitedCTA}
+              className="min-h-[56px] rounded-xl border-2 border-gray-700 px-8 py-4 text-lg font-semibold text-gray-200 transition hover:border-gray-500 hover:bg-gray-900/70"
+            >
+              Sign Up With Invite Code
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <footer className="relative border-t border-gray-900 px-6 py-10">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 text-sm text-gray-400 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-light text-gray-950">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" />
+                <path d="M2 17L12 22L22 17" />
+                <path d="M2 12L12 17L22 12" />
+              </svg>
+            </div>
+            <span className="font-semibold text-gray-200">MacroTracker</span>
+          </div>
+
+          <div className="flex flex-col gap-2 text-left md:items-end">
+            <span>Closed beta for invite-based testing.</span>
+            <a
+              href={LINKEDIN_INVITE_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-primary-light transition hover:text-[#4ade80]"
+            >
+              linkedin.com/in/jamesthedyer
+            </a>
           </div>
         </div>
       </footer>
@@ -264,116 +326,79 @@ export function LandingPage() {
   );
 }
 
-// Hero Visual Component
-function HeroVisual() {
+function HeroMedia() {
   return (
-    <div className="relative w-full aspect-square max-w-lg mx-auto">
-      {/* Animated ring elements */}
-      <div className="absolute inset-0 animate-pulse">
-        <div className="absolute inset-0 rounded-full border-2 border-primary-light/20" />
-        <div className="absolute inset-8 rounded-full border-2 border-primary-light/30" />
-        <div className="absolute inset-16 rounded-full border-2 border-primary-light/40" />
-      </div>
+    <div className="relative mx-auto max-w-lg">
+      <div className="absolute -inset-6 rounded-[3rem] bg-primary-light/10 blur-3xl" />
 
-      {/* Center mockup */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="relative">
-          {/* Phone frame mockup */}
-          <div className="w-72 h-[580px] bg-gray-950 rounded-[3rem] border-8 border-gray-800 shadow-2xl overflow-hidden relative">
-            {/* Screen content */}
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
-              {/* Mock UI elements */}
-              <div className="space-y-6 mt-12">
-                <div className="h-3 w-24 bg-gray-700 rounded" />
-                <div className="h-8 w-full bg-gray-700 rounded-lg" />
-
-                <div className="grid grid-cols-2 gap-4 mt-8">
-                  <div className="aspect-square bg-primary-light/10 border border-primary-light/30 rounded-xl flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-primary-light">87%</div>
-                      <div className="text-xs text-gray-400 mt-1">Protein</div>
-                    </div>
-                  </div>
-                  <div className="aspect-square bg-protein/10 border border-protein/30 rounded-xl flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-protein">64%</div>
-                      <div className="text-xs text-gray-400 mt-1">Carbs</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-8 space-y-3">
-                  <div className="h-20 bg-gray-800 rounded-xl border border-gray-700" />
-                  <div className="h-20 bg-gray-800 rounded-xl border border-gray-700" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Floating data badges */}
-          <FloatingBadge
-            className="absolute -top-4 -right-4 animate-slide-up"
-            label="Calories"
-            value="487"
-            delay="delay-500"
-          />
-          <FloatingBadge
-            className="absolute -bottom-4 -left-4 animate-slide-up"
-            label="Protein"
-            value="42g"
-            delay="delay-700"
+      <div className="relative rounded-[2.5rem] border border-gray-800 bg-gray-900/80 p-3 shadow-2xl shadow-black/50 backdrop-blur">
+        <div className="overflow-hidden rounded-[2rem] border border-gray-800 bg-gray-950">
+          <video
+            className="h-[680px] w-full object-cover"
+            src="/landing/app-demo.mp4"
+            poster="/landing/demo-shot-2.jpg"
+            autoPlay
+            muted
+            loop
+            playsInline
           />
         </div>
+
+        <FloatingBadge
+          className="absolute -left-8 top-10"
+          label="Status"
+          value="Beta"
+        />
+        <FloatingBadge
+          className="absolute -right-6 bottom-16"
+          label="Flow"
+          value="Photo"
+        />
       </div>
     </div>
   );
 }
 
-// Floating Badge Component
-function FloatingBadge({ className, label, value, delay }: { className: string; label: string; value: string; delay: string }) {
+function FloatingBadge({ className, label, value }: { className: string; label: string; value: string }) {
   return (
-    <div className={`${className} ${delay}`}>
-      <div className="bg-gray-900 border-2 border-primary-light/30 rounded-xl px-4 py-3 shadow-lg backdrop-blur-sm">
-        <div className="text-xs text-gray-400 uppercase tracking-wide">{label}</div>
-        <div className="text-2xl font-bold text-primary-light tabular-nums">{value}</div>
-      </div>
+    <div className={`${className} hidden rounded-2xl border border-primary-light/30 bg-gray-950/95 px-4 py-3 shadow-lg shadow-black/40 backdrop-blur md:block`}>
+      <div className="text-xs uppercase tracking-[0.16em] text-gray-500">{label}</div>
+      <div className="text-2xl font-bold text-primary-light">{value}</div>
     </div>
   );
 }
 
-// Benefit Card Component
-function BenefitCard({ icon, title, description, delay }: { icon: React.ReactNode; title: string; description: string; delay: string }) {
+function StatCard({ value, label }: { value: string; label: string }) {
   return (
-    <div className={`group relative animate-slide-up ${delay}`}>
-      <div className="relative h-full bg-gray-900/50 border border-gray-700 rounded-2xl p-8 hover:border-primary-light/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary-light/5">
-        <div className="w-14 h-14 rounded-xl bg-primary-light/10 border border-primary-light/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-          {icon}
-        </div>
-        <h3 className="text-xl font-bold mb-3">{title}</h3>
-        <p className="text-gray-400 leading-relaxed">{description}</p>
-      </div>
+    <div className="rounded-2xl border border-gray-800 bg-gray-900/70 p-4 backdrop-blur">
+      <div className="text-lg font-bold text-white">{value}</div>
+      <div className="mt-1 text-sm text-gray-400">{label}</div>
     </div>
   );
 }
 
-// Step Card Component
-function StepCard({ number, title, description, delay }: { number: string; title: string; description: string; delay: string }) {
+function BenefitCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
-    <div className={`relative animate-slide-up ${delay}`}>
-      <div className="relative">
-        <div className="text-7xl font-bold text-gray-800 mb-4">{number}</div>
-        <h3 className="text-2xl font-bold mb-3">{title}</h3>
-        <p className="text-gray-400 leading-relaxed">{description}</p>
+    <div className="rounded-[1.75rem] border border-gray-800 bg-gray-900/70 p-8 backdrop-blur transition hover:border-primary-light/30 hover:bg-gray-900">
+      <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary-light/20 bg-primary-light/10">
+        {icon}
       </div>
-      {/* Connector line (hidden on last item) */}
-      {number !== "03" && (
-        <div className="hidden md:block absolute top-12 left-full w-full h-0.5 bg-gradient-to-r from-primary-light/30 to-transparent" />
-      )}
+      <h3 className="mb-3 text-2xl font-bold tracking-tight">{title}</h3>
+      <p className="leading-relaxed text-gray-400">{description}</p>
     </div>
   );
 }
 
-// Icon Components
+function StepCard({ number, title, description }: { number: string; title: string; description: string }) {
+  return (
+    <div className="rounded-[1.75rem] border border-gray-800 bg-gray-900/60 p-8 backdrop-blur">
+      <div className="mb-5 text-6xl font-bold leading-none text-gray-800">{number}</div>
+      <h3 className="mb-3 text-2xl font-bold tracking-tight">{title}</h3>
+      <p className="leading-relaxed text-gray-400">{description}</p>
+    </div>
+  );
+}
+
 function ZapIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary-light">
