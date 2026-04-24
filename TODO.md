@@ -32,3 +32,12 @@ Lets review our caching policies and make sure they all make sense first before 
 
 UX-1
 implement swipe right to delete instead of a dedicated button for food entries
+
+UX-2
+Confirm meal page: the save and canel buttons are on the bottom but i want them at the top instead
+
+UX-3 
+Save meal does an api call even if nothing in the meal has changed.
+
+UX-4
+The user should be able to trigger the goal setting onboarding from the goals page. when triggered from thegoals page, it should only set the goals on the one onboardingGoalsPage, not go thru the other onboarding pages.
