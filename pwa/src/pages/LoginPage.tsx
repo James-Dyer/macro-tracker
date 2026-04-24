@@ -190,6 +190,26 @@ export function LoginPage() {
             </button>
           </div>
 
+          <Card
+            variant="filled"
+            padding="md"
+            className="mb-6 bg-primary/10 dark:bg-primary/15 border border-primary/20 dark:border-primary/30"
+          >
+            <div className="space-y-4">
+              <Typography variant="bodySmall" className="text-gray-800 dark:text-gray-200">
+                MacroTracker is currently in closed beta. Reach out on LinkedIn for an invite code.
+              </Typography>
+              <a
+                href="https://www.linkedin.com/in/jamesthedyer/"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex w-full items-center justify-center rounded-xl border-2 border-primary-light px-6 py-3 min-h-[48px] font-semibold text-primary-light transition-colors duration-150 hover:bg-primary/10 dark:hover:bg-primary-light/10"
+              >
+                Request Access
+              </a>
+            </div>
+          </Card>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Success Message */}
             {message && (
