@@ -1,73 +1,81 @@
-# React + TypeScript + Vite
+# MacroTracker PWA
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This directory contains the React frontend for
+[MacroTracker](../README.md), an AI-powered meal photo and macro tracking app.
 
-Currently, two official plugins are available:
+For product context, backend architecture, deployment, and the full repository
+layout, start with the [root README](../README.md).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Stack
 
-## React Compiler
+- React 19 and TypeScript
+- Vite 7
+- Tailwind CSS 4
+- React Router 7
+- Supabase JavaScript client
+- `vite-plugin-pwa` and Workbox
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Setup
 
-## Expanding the ESLint configuration
+Requires Node.js 20 and access to a configured Supabase project.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm ci
+cp .env.local.example .env.local
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Set the public Supabase credentials in `.env.local`:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```dotenv
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+Vite serves from `http://localhost:5173`; the app route is
+`http://localhost:5173/macro-tracker/`. Its router basename and production asset
+base match the GitHub Pages deployment.
+
+## Commands
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Vite development server |
+| `npm run build` | Type-check and create a production build |
+| `npm run lint` | Run ESLint |
+| `npm run preview` | Preview the production build locally |
+
+## Frontend Structure
+
+```text
+src/
+├── pages/       # Public, dashboard, and onboarding routes
+├── components/  # Reusable UI, layout, and auth components
+├── hooks/       # Meal, goal, session, cache, and entitlement logic
+├── contexts/    # Auth and theme providers
+├── services/    # Supabase client
+└── utils/       # Images, caching, calculations, errors, and logging
+```
+
+Public routes are the landing page and login. All `/dashboard/*` routes are
+guarded by `ProtectedRoute`, which enforces authentication, beta entitlement,
+and required onboarding.
+
+## PWA Behavior
+
+The Vite PWA configuration:
+
+- Generates an installable standalone app
+- Automatically updates the service worker
+- Caches built assets
+- Uses network-first caching for Supabase REST requests
+- Uses cache-first behavior for Supabase Storage images
+
+Test camera capture and installation on a real iOS or Android device before
+release. The full manual test plan is in
+[`../QA_CHECKLIST.md`](../QA_CHECKLIST.md).
